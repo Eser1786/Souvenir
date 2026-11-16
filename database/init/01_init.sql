@@ -50,6 +50,7 @@ CREATE TABLE NGUOI_DUNG (
     hoTen VARCHAR(100) NOT NULL,
     soDienThoai CHAR(10) NOT NULL,
     trangThai VARCHAR(50) NOT NULL DEFAULT 'HoatDong',
+    soLanDangNhapSai INT NOT NULL DEFAULT 0,
     CONSTRAINT FK_NguoiDung_VaiTro FOREIGN KEY (vaiTroId) REFERENCES VAI_TRO(id)
 );
 
