@@ -1,0 +1,63 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam noteBackgroundColor #FFFDE7
+
+title Sequence Diagram - Chấm công (In/Out) (UC02)
+
+actor "Nhân viên / Quản lý" as User
+boundary "Giao diện Chấm công" as UI
+control "Hệ thống xử lý\n(Thành phần hệ thống suy luận)" as Core
+database "Cơ sở dữ liệu" as DB
+
+note over User, DB
+Điều kiện trước:
+1. Người dùng đã đăng nhập.
+2. Muốn "Tan ca" thì phải "Vào ca" trước đó.
+end note
+
+User -> UI : 1. Truy cập chức năng "Chấm công (In/Out)"
+activate UI
+UI -> Core : Lấy thông tin ca làm việc phân công và giờ hệ thống
+activate Core
+Core -> DB : Truy vấn trạng thái ca làm việc của nhân viên
+activate DB
+DB --> Core : Trả về thông tin ca và trạng thái chấm công
+deactivate DB
+
+alt 3a. Đã chấm công vào ca
+    Core --> UI : 2. Hiển thị ca phân công, giờ hiện tại (Ẩn nút "Vào ca", chỉ cho nhấn "Tan ca")
+    UI --> User : Hiển thị giao diện chỉ cho phép nhấn "Tan ca"
+    User -> UI : 3. Nhấn nút "Tan ca" (Check-out)
+else Chưa chấm công vào ca
+    Core --> UI : 2. Hiển thị ca làm việc phân công và giờ hiện tại
+    UI --> User : Hiển thị giao diện chấm công
+    User -> UI : 3. Nhấn nút "Vào ca" (Check-in)
+end
+
+UI -> Core : Gửi yêu cầu chấm công (Lấy theo giờ hệ thống)
+Core -> DB : 4. Lưu mốc thời gian (Check-in/Check-out) và cập nhật trạng thái làm việc
+activate DB
+
+alt Lưu dữ liệu thất bại
+    DB --> Core : Báo lỗi ghi nhận dữ liệu
+    deactivate DB
+    Core --> UI : Trả về thông báo lỗi
+    UI --> User : Hiển thị thông báo lỗi (Trạng thái chấm công không đổi)
+    note over User, DB
+    Trạng thái sau (Thất bại): Trạng thái chấm công không đổi,
+    hệ thống hiển thị thông báo lỗi.
+    end note
+else Lưu dữ liệu thành công
+    DB --> Core : Xác nhận lưu thành công
+    Core --> UI : Cập nhật trạng thái ca thành công
+    deactivate Core
+    UI --> User : Thông báo ghi nhận chấm công thành công
+    deactivate UI
+    note over User, DB
+    Trạng thái sau (Thành công): Lịch sử chấm công được ghi nhận
+    vào cơ sở dữ liệu, trạng thái ca của nhân viên được cập nhật.
+    end note
+end
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam noteBackgroundColor #FFFDE7
+
+title Sequence Diagram - Đăng nhập (UC01)
+
+actor "Nhân viên / Quản lý" as User
+boundary "Giao diện Đăng nhập" as UI
+control "Hệ thống xử lý\n(Thành phần hệ thống suy luận)" as Core
+database "Cơ sở dữ liệu" as DB
+
+note over User, DB
+Điều kiện trước:
+1. Người dùng đã được Quản lý cấp tài khoản và tài khoản đang hoạt động.
+end note
+
+User -> UI : 1. Mở giao diện đăng nhập hệ thống
+activate UI
+UI --> User : Hiển thị màn hình đăng nhập (ẩn mật khẩu khi nhập)
+User -> UI : 2. Nhập tên đăng nhập, mật khẩu và nhấn "Đăng nhập"
+UI -> Core : Gửi thông tin đăng nhập (mã hóa mật khẩu)
+activate Core
+Core -> DB : 3. Kiểm tra thông tin và xác thực tài khoản
+activate DB
+DB --> Core : Trả về kết quả xác thực tài khoản
+deactivate DB
+
+alt 2a. Sai thông tin đăng nhập
+    Core -> DB : Lưu nhật ký đăng nhập thất bại (khóa tạm thời nếu sai 5 lần liên tiếp)
+    activate DB
+    DB --> Core : Xác nhận ghi nhật ký
+    deactivate DB
+    Core --> UI : Trả về thông báo lỗi xác thực
+    UI --> User : Hiển thị thông báo lỗi và yêu cầu nhập lại
+    note over User, DB
+    Trạng thái sau (Thất bại): Hệ thống giữ nguyên màn hình đăng nhập,
+    hiển thị thông báo lỗi tương ứng và lưu nhật ký đăng nhập thất bại.
+    end note
+else Xác thực thành công
+    Core -> Core : 4. Phân quyền tương ứng theo vai trò và cấp token phiên làm việc
+    Core --> UI : Trả về token phiên và thông tin phân quyền
+    deactivate Core
+    UI --> User : Chuyển hướng vào màn hình làm việc chính
+    deactivate UI
+    note over User, DB
+    Trạng thái sau (Thành công): Người dùng xác thực thành công, được cấp
+    token phiên làm việc và chuyển tới màn hình chức năng theo quyền.
+    end note
+end
+
+@enduml

@@ -1,0 +1,91 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam noteBackgroundColor #FFFDE7
+
+title Sequence Diagram - Mở Chốt ca làm việc (UC03)
+
+actor "Nhân viên / Quản lý\n(Thu ngân)" as User
+boundary "Phần mềm POS\n(Mở Chốt ca)" as POS
+control "Hệ thống xử lý\n(Thành phần hệ thống suy luận)" as Core
+database "Cơ sở dữ liệu\n(Thành phần hệ thống suy luận)" as DB
+
+note over User, DB
+Điều kiện trước:
+1. Người dùng đã đăng nhập và đã chấm công vào ca.
+2. Mỗi máy POS chỉ được mở một ca tại một thời điểm.
+3. Khi chốt ca: đang có ca đã mở.
+end note
+
+User -> POS : 1. Mở chức năng "Mở Chốt ca" trên phần mềm POS
+activate POS
+POS --> User : Hiển thị màn hình Mở/Chốt ca
+
+group Quy trình Mở ca (Đầu ca)
+    User -> POS : 2. Nhập số tiền mặt bàn giao ban đầu và nhấn "Mở ca"
+    POS -> Core : Yêu cầu mở phiên ca làm việc mới
+    activate Core
+    Core -> DB : Lưu số dư đầu ca và mở phiên làm việc
+    activate DB
+    DB --> Core : Xác nhận mở ca thành công
+    deactivate DB
+    Core --> POS : Thông báo đã mở ca
+    deactivate Core
+    POS --> User : Hiển thị trạng thái ca đang mở
+end
+
+group Trong ca làm việc
+    Core -> DB : 3. Tự động ghi nhận doanh thu theo từng hình thức thanh toán
+    activate Core
+    activate DB
+    DB --> Core : Cập nhật doanh thu ca
+    deactivate DB
+    deactivate Core
+end
+
+group Quy trình Chốt ca (Cuối ca)
+    User -> POS : 4. Kiểm đếm tiền mặt thực tế trong két và nhấn "Chốt ca"
+    POS -> Core : Gửi số liệu tiền mặt thực tế để đối chiếu
+    activate Core
+    Core -> DB : 5. Đối chiếu số liệu thực tế với doanh thu hệ thống
+    activate DB
+    DB --> Core : Kết quả đối soát số dư két
+    deactivate DB
+
+    alt 4a. Sai lệch tiền mặt két
+        Core --> POS : Yêu cầu nhập lý do giải trình trước khi chốt ca
+        POS --> User : Hiển thị thông báo yêu cầu giải trình tiền lệch
+        alt Không giải trình / Chưa xử lý vướng mắc (Thất bại)
+            User -> POS : Hủy hoặc bỏ trống lý do giải trình
+            POS --> User : Giữ nguyên trạng thái phiên ca, yêu cầu xử lý vướng mắc
+            note over User, DB
+            Trạng thái sau (Thất bại): Trạng thái phiên ca không thay đổi,
+            yêu cầu xử lý vướng mắc trước khi chốt ca.
+            end note
+        else Nhập lý do giải trình hợp lệ
+            User -> POS : Nhập lý do giải trình chênh lệch và xác nhận
+            POS -> Core : Gửi lý do giải trình
+            Core -> DB : Lưu số dư cuối ca, ghi nhận chênh lệch và đóng phiên làm việc
+            activate DB
+            DB --> Core : Xác nhận chốt ca (Ca đã chốt không được sửa số liệu)
+            deactivate DB
+            Core --> POS : In phiếu bàn giao ca và đóng phiên làm việc
+            POS --> User : Nhận phiếu bàn giao ca
+        end
+    else Số liệu khớp (Thành công)
+        Core -> DB : Lưu số dư cuối ca và đóng phiên làm việc
+        activate DB
+        DB --> Core : Xác nhận chốt ca thành công
+        deactivate DB
+        Core --> POS : 5. In phiếu bàn giao ca và đóng phiên làm việc
+        deactivate Core
+        POS --> User : Nhận phiếu bàn giao ca, kết thúc ca
+        deactivate POS
+    end
+    note over User, DB
+    Trạng thái sau (Thành công): Phiên ca làm việc được mở/chốt thành công,
+    lưu số dư đầu/cuối ca, in phiếu bàn giao ca và ghi nhận chênh lệch (nếu có).
+    end note
+end
+
+@enduml

@@ -1,0 +1,67 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam noteBackgroundColor #FFFDE7
+
+title Sequence Diagram - Xem báo cáo (Doanh thu, Kho, Ca) (UC14)
+
+actor "Quản lý" as User
+boundary "Phân hệ Báo cáo & Thống kê" as UI
+control "Hệ thống xử lý\n(Thành phần hệ thống suy luận)" as Core
+database "Cơ sở dữ liệu\n(Thành phần hệ thống suy luận)" as DB
+
+note over User, DB
+Điều kiện trước: Người dùng đã đăng nhập với quyền Quản lý.
+Yêu cầu đặc biệt: Số liệu báo cáo phải khớp với hóa đơn đã thanh toán.
+end note
+
+User -> UI : 1. Truy cập phân hệ "Báo cáo & Thống kê"
+activate UI
+UI --> User : Hiển thị giao diện tùy chọn báo cáo
+User -> UI : 2. Chọn loại báo cáo (Doanh thu - Lợi nhuận, Kho hàng hoặc Ca làm việc)
+User -> UI : 3. Chọn khoảng thời gian lọc (theo ngày, tuần, tháng)
+UI -> Core : Gửi yêu cầu tổng hợp dữ liệu báo cáo theo điều kiện lọc
+activate Core
+Core -> DB : Truy vấn dữ liệu hóa đơn đã thanh toán, kho hàng và ca làm việc
+activate DB
+
+alt Lỗi kết nối dữ liệu (Thất bại)
+    DB --> Core : Báo lỗi kết nối cơ sở dữ liệu
+    deactivate DB
+    Core --> UI : Trả về thông báo lỗi truy xuất
+    UI --> User : Hiển thị báo lỗi kết nối dữ liệu, không hiển thị được báo cáo
+    note over User, DB
+    Trạng thái sau (Thất bại): Báo lỗi kết nối dữ liệu
+    hoặc không hiển thị được báo cáo.
+    end note
+else Truy xuất dữ liệu thành công
+    activate DB
+    DB --> Core : Trả về tập dữ liệu theo khoảng thời gian lọc
+    deactivate DB
+
+    alt 3a. Không có giao dịch phát sinh
+        Core --> UI : Trả về doanh thu = 0 kèm thông báo không phát sinh giao dịch
+        UI --> User : Hiển thị doanh thu = 0 và thông báo không phát sinh giao dịch
+    else Có dữ liệu giao dịch
+        Core -> Core : 4. Tổng hợp số liệu và tạo biểu đồ trực quan
+        Core --> UI : Trả về bảng số liệu và biểu đồ
+        UI --> User : 4. Hiển thị bảng số liệu và biểu đồ trực quan
+
+        opt 5. Xuất file báo cáo (Excel hoặc PDF)
+            User -> UI : 5. Nhấn "Xuất file" (Chọn định dạng Excel hoặc PDF)
+            UI -> Core : Yêu cầu kết xuất báo cáo ra file
+            Core -> Core : Tạo file báo cáo (Excel / PDF)
+            Core --> UI : Trả về file báo cáo hoàn chỉnh
+            UI --> User : Tải file báo cáo về máy
+        end
+    end
+end
+deactivate Core
+deactivate UI
+
+note over User, DB
+Trạng thái sau (Thành công): Hệ thống truy xuất và hiển thị/xuất báo cáo
+chính xác theo điều kiện lọc.
+end note
+
+@enduml
