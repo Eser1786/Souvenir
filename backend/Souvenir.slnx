@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Souvenir.Api/Souvenir.Api.csproj" />
+    <Project Path="src/Souvenir.Application/Souvenir.Application.csproj" />
+    <Project Path="src/Souvenir.Domain/Souvenir.Domain.csproj" />
+    <Project Path="src/Souvenir.Infrastructure/Souvenir.Infrastructure.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,24 @@
+# .NET / C#
+**/[Bb]in/
+**/[Oo]bj/
+**/.vs/
+*.user
+*.suo
+**/appsettings.Development.json
+
+# Node / React
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+*.local
+
+# Docker & Environment
+.env
+postgres_data/
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
