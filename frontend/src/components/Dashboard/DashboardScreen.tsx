@@ -50,7 +50,11 @@ export const DashboardScreen: React.FC = () => {
         </div>
 
         <div className="quick-modules-grid">
-          <div className="module-card">
+          <div
+            className="module-card clickable-card"
+            onClick={() => navigate('/pos')}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="module-icon-box">💳</div>
             <h2 className="module-title">Bán hàng (POS)</h2>
             <p className="module-desc">

@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context';
 import { LoginScreen } from './components/Login/LoginScreen';
-import { DashboardScreen } from './components/Dashboard/DashboardScreen';
+import { PosScreen } from './components/Pos/PosScreen';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -11,7 +11,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }
 
 const PublicRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : children;
+  return isAuthenticated ? <Navigate to="/pos" replace /> : children;
 };
 
 export const AppContent: React.FC = () => {
@@ -26,14 +26,15 @@ export const AppContent: React.FC = () => {
         }
       />
       <Route
-        path="/dashboard"
+        path="/pos"
         element={
           <ProtectedRoute>
-            <DashboardScreen />
+            <PosScreen />
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<Navigate to="/pos" replace />} />
+      <Route path="*" element={<Navigate to="/pos" replace />} />
     </Routes>
   );
 };

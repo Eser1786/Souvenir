@@ -116,8 +116,11 @@ ON CONFLICT (maNCC) DO NOTHING;
 -- soLuongTon de 0 vi chua co phieu nhap kho nao.
 -- ============================================================
 
+-- Bổ sung danh mục Thú bông
+INSERT INTO danh_muc_san_pham (tenDanhMuc, trangThai) VALUES ('Thu bong', 'HoatDong') ON CONFLICT (tenDanhMuc) DO NOTHING;
+
 INSERT INTO san_pham
-    (danhMucId, donViTinhId, maSP, tenSP, giaNhap, giaBan, soLuongTon, trangThai)
+    (danhMucId, donViTinhId, maSP, tenSP, giaNhap, giaBan, soLuongTon, trangThai, imageUrl)
 SELECT
     dm.id,
     dvt.id,
@@ -125,24 +128,40 @@ SELECT
     p.tenSP,
     p.giaNhap,
     p.giaBan,
-    0,
-    'KinhDoanh'
+    p.soLuongTon,
+    'KinhDoanh',
+    p.imageUrl
 FROM (
     VALUES
-        ('Do luu niem', 'Cai', 'SP001', 'Nam cham tu lanh Viet Nam', 12000::numeric, 25000::numeric),
-        ('Do luu niem', 'Cai', 'SP002', 'Mo hinh xe xich lo mini', 45000::numeric, 85000::numeric),
-        ('Moc khoa', 'Cai', 'SP003', 'Moc khoa non la', 8000::numeric, 20000::numeric),
-        ('Moc khoa', 'Cai', 'SP004', 'Moc khoa landmark', 10000::numeric, 25000::numeric),
-        ('Do thu cong my nghe', 'Cai', 'SP005', 'Quat giay thu cong', 25000::numeric, 50000::numeric),
-        ('Trang suc va phu kien', 'Bo', 'SP006', 'Bo vong tay handmade', 30000::numeric, 65000::numeric),
-        ('Van phong pham', 'Quyen', 'SP007', 'So tay hoa tiet Viet Nam', 18000::numeric, 40000::numeric),
-        ('Do trang tri', 'Cai', 'SP008', 'Tranh trang tri mini', 35000::numeric, 75000::numeric),
-        ('Ao thun va tui vai', 'Cai', 'SP009', 'Tui vai in hoa tiet', 28000::numeric, 60000::numeric),
-        ('Qua tang', 'Hop', 'SP010', 'Hop qua luu niem', 40000::numeric, 90000::numeric)
-) AS p(tenDanhMuc, tenDonVi, maSP, tenSP, giaNhap, giaBan)
+        -- 6 sản phẩm nguyên bản chuẩn Figma Screen 02 (Hình ảnh cắt trực tiếp từ thiết kế)
+        ('Thu bong', 'Cai', 'GB001', 'Gấu bông Teddy 25cm', 90000::numeric, 180000::numeric, 24, '/products/teddy.png'),
+        ('Qua tang', 'Cai', 'LY002', 'Ly sứ tặng Ba', 45000::numeric, 95000::numeric, 36, '/products/lysu.png'),
+        ('Do trang tri', 'Cai', 'DN003', 'Đèn ngủ gỗ', 120000::numeric, 220000::numeric, 12, '/products/denngu.png'),
+        ('Qua tang', 'Hop', 'HQ004', 'Hộp quà pastel', 20000::numeric, 45000::numeric, 58, '/products/hopqua.png'),
+        ('Van phong pham', 'Bo', 'BT005', 'Bộ bút quà tặng', 60000::numeric, 120000::numeric, 18, '/products/but.png'),
+        ('Do trang tri', 'Cai', 'DL006', 'Đèn lồng trang trí', 130000::numeric, 250000::numeric, 9, '/products/denlong.png'),
+
+        -- Các mặt hàng lưu niệm truyền thống (Seed mẫu với ảnh chuẩn đẹp, tải cục bộ)
+        ('Do luu niem', 'Cai', 'SP001', 'Nam châm tủ lạnh Việt Nam', 12000::numeric, 25000::numeric, 50, '/products/namcham.jpg'),
+        ('Do luu niem', 'Cai', 'SP002', 'Mô hình xe xích lô mini', 45000::numeric, 85000::numeric, 30, '/products/xichlo.jpg'),
+        ('Moc khoa', 'Cai', 'SP003', 'Móc khóa nón lá', 8000::numeric, 20000::numeric, 80, '/products/mockhoa.jpg'),
+        ('Moc khoa', 'Cai', 'SP004', 'Móc khóa landmark', 10000::numeric, 25000::numeric, 65, '/products/mockhoa_landmark.jpg'),
+        ('Do thu cong my nghe', 'Cai', 'SP005', 'Quạt giấy thủ công', 25000::numeric, 50000::numeric, 40, '/products/quatgiay.jpg'),
+        ('Trang suc va phu kien', 'Bo', 'SP006', 'Bộ vòng tay handmade', 30000::numeric, 65000::numeric, 35, '/products/vongtay.jpg'),
+        ('Van phong pham', 'Quyen', 'SP007', 'Sổ tay họa tiết Việt Nam', 18000::numeric, 40000::numeric, 55, '/products/sotay.jpg'),
+        ('Do trang tri', 'Cai', 'SP008', 'Tranh trang trí mini', 35000::numeric, 75000::numeric, 25, '/products/denngu.png'),
+        ('Ao thun va tui vai', 'Cai', 'SP009', 'Túi vải in họa tiết', 28000::numeric, 60000::numeric, 45, '/products/tuivai.jpg'),
+        ('Qua tang', 'Hop', 'SP010', 'Hộp quà lưu niệm', 40000::numeric, 90000::numeric, 30, '/products/hopqua.png')
+) AS p(tenDanhMuc, tenDonVi, maSP, tenSP, giaNhap, giaBan, soLuongTon, imageUrl)
 JOIN danh_muc_san_pham dm ON dm.tenDanhMuc = p.tenDanhMuc
 JOIN don_vi_tinh dvt ON dvt.tenDonVi = p.tenDonVi
-ON CONFLICT (maSP) DO NOTHING;
+ON CONFLICT (maSP) DO UPDATE
+SET tenSP = EXCLUDED.tenSP,
+    giaBan = EXCLUDED.giaBan,
+    soLuongTon = EXCLUDED.soLuongTon,
+    imageUrl = EXCLUDED.imageUrl,
+    danhMucId = EXCLUDED.danhMucId,
+    donViTinhId = EXCLUDED.donViTinhId;
 
 
 -- ============================================================

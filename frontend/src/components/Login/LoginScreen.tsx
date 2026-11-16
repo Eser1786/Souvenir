@@ -39,7 +39,7 @@ export const LoginScreen: React.FC = () => {
       setSuccessMessage(`Đăng nhập thành công! Chào mừng ${displayName}.`);
       
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/pos');
       }, 500);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
