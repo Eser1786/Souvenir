@@ -1,0 +1,70 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam noteBackgroundColor #FFFDE7
+
+title Sequence Diagram - Quản lý nhân viên & Phân quyền (UC15)
+
+actor "Quản lý" as User
+boundary "Phân hệ Quản lý nhân viên\n& Phân quyền" as UI
+control "Hệ thống xử lý\n(Thành phần hệ thống suy luận)" as Core
+database "Cơ sở dữ liệu" as DB
+
+note over User, DB
+Điều kiện trước: Người dùng đã đăng nhập với quyền Quản lý.
+Yêu cầu đặc biệt:
+1. Tên đăng nhập không được trùng.
+2. Hệ thống luôn phải còn ít nhất một tài khoản Quản lý.
+end note
+
+User -> UI : 1. Mở phân hệ "Quản lý nhân viên & Phân quyền"
+activate UI
+UI -> Core : Yêu cầu kiểm tra quyền và lấy danh sách nhân viên
+activate Core
+
+alt 4a. Nhân viên vào chức năng bị hạn chế (Không có quyền Quản lý)
+    Core --> UI : Chặn truy cập và báo không có quyền
+    UI --> User : Hiển thị thông báo chặn truy cập (Không có quyền thực hiện)
+    note over User, DB
+    Trạng thái sau (Thất bại): Quyền và thông tin tài khoản
+    không thay đổi, báo lỗi tương ứng.
+    end note
+else Người dùng có quyền Quản lý hợp lệ
+    Core -> DB : Truy vấn danh sách nhân viên và trạng thái tài khoản
+    activate DB
+    DB --> Core : Trả về danh sách nhân sự
+    deactivate DB
+    Core --> UI : 2. Hiển thị danh sách nhân viên và trạng thái tài khoản
+    UI --> User : Hiển thị danh sách nhân viên
+    User -> UI : 3. Chọn: Thêm nhân viên mới, Sửa thông tin hoặc Phân quyền tài khoản
+    User -> UI : 4. Nhập thông tin, gán vai trò ("Nhân viên" hoặc "Quản lý") và nhấn "Lưu"
+    UI -> Core : Yêu cầu kiểm tra và lưu thông tin / phân quyền
+    Core -> DB : Kiểm tra trùng tên đăng nhập và số lượng tài khoản Quản lý còn lại
+    activate DB
+    DB --> Core : Kết quả kiểm tra điều kiện
+    deactivate DB
+
+    alt 3a. Trùng tên đăng nhập hoặc vi phạm điều kiện tối thiểu 1 Quản lý (Thất bại)
+        Core --> UI : Báo lỗi trùng tên đăng nhập hoặc không thể xóa/hạ quyền Quản lý cuối cùng
+        UI --> User : Yêu cầu chọn tên tài khoản khác / giữ lại ít nhất 1 Quản lý
+        note over User, DB
+        Trạng thái sau (Thất bại): Quyền và thông tin tài khoản
+        không thay đổi, báo lỗi tương ứng.
+        end note
+    else Thông tin hợp lệ (Thành công)
+        Core -> DB : 5. Cập nhật thông tin nhân sự và phân quyền tài khoản vào cơ sở dữ liệu
+        activate DB
+        DB --> Core : Xác nhận lưu thành công
+        deactivate DB
+        Core --> UI : Thông báo cập nhật thành công
+        deactivate Core
+        UI --> User : Hiển thị thông báo lưu thông tin và phân quyền thành công
+        deactivate UI
+        note over User, DB
+        Trạng thái sau (Thành công): Thông tin nhân sự và quyền truy cập của
+        tài khoản được tạo/cập nhật thành công trong cơ sở dữ liệu.
+        end note
+    end
+end
+
+@enduml

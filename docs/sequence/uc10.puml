@@ -1,0 +1,77 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam noteBackgroundColor #FFFDE7
+
+title Sequence Diagram - Tích điểm/Đổi điểm (UC10)
+
+actor "Nhân viên" as User
+boundary "Màn hình Thanh toán POS" as UI
+control "Hệ thống xử lý\n(Thành phần hệ thống suy luận)" as Core
+database "Cơ sở dữ liệu\n(Thành phần hệ thống suy luận)" as DB
+
+note over User, DB
+Điều kiện trước:
+1. Điểm mở rộng («extend») từ Thanh toán (UC07).
+2. Đơn hàng đang ở bước thanh toán.
+3. Khách hàng đã có hồ sơ thành viên (không áp dụng cho khách vãng lai).
+end note
+
+UI -> Core : 1. Truy vấn điểm tích lũy của khách theo SĐT
+activate Core
+Core -> DB : Lấy số dư quỹ điểm thưởng của khách hàng
+activate DB
+DB --> Core : Trả về điểm tích lũy hiện có
+deactivate DB
+Core --> UI : Hiển thị điểm tích lũy của khách
+deactivate Core
+activate UI
+UI --> User : 1. Hiển thị điểm tích lũy trên màn hình thanh toán
+
+alt 2b. Khách muốn giữ điểm
+    User -> UI : Bỏ qua bước đổi điểm
+    UI --> User : Giữ nguyên tổng tiền thanh toán chuẩn
+else 2. Khách chọn đổi điểm
+    User -> UI : 2. Nhập số điểm dùng để giảm trừ tiền hóa đơn
+    UI -> Core : Kiểm tra hạn mức điểm đổi và tính tiền giảm trừ
+    activate Core
+
+    alt 2a. Chưa đủ điểm đổi (Thất bại đổi điểm)
+        Core --> UI : Báo chưa đủ hạn mức đổi điểm
+        UI --> User : Hiển thị thông báo lỗi và giữ nguyên thanh toán chuẩn
+        note over User, DB
+        Trạng thái sau (Thất bại đổi điểm): Quỹ điểm giữ nguyên,
+        hệ thống báo lỗi không đủ điều kiện đổi điểm.
+        end note
+    else Đủ điểm đổi
+        Core -> Core : Quy đổi điểm thành tiền giảm giá trực tiếp (theo tỷ lệ Quản lý cài đặt)
+        Core --> UI : Cập nhật số tiền giảm trừ trên hóa đơn
+        UI --> User : Hiển thị tổng tiền thanh toán sau khi trừ điểm
+    end
+    deactivate Core
+end
+
+User -> UI : 3. Thực hiện thanh toán đơn hàng (UC07)
+UI -> Core : Xác nhận kết quả thanh toán đơn hàng
+activate Core
+
+alt Thanh toán đơn hàng thất bại
+    Core -> Core : Không cộng/trừ điểm do đơn hàng chưa thanh toán thành công
+    Core --> UI : Giữ nguyên quỹ điểm thưởng
+else 3. Khách thanh toán đơn hàng thành công (Chỉ cộng điểm sau khi thanh toán thành công)
+    Core -> Core : 4. Tính điểm thưởng mới theo % giá trị đơn hàng
+    Core -> DB : Trừ điểm đã đổi (nếu có) và cộng điểm mới vào quỹ điểm khách hàng
+    activate DB
+    DB --> Core : Cập nhật quỹ điểm thưởng thành công
+    deactivate DB
+    Core --> UI : 4. Truyền thông tin điểm thưởng để in lên hóa đơn
+    deactivate Core
+    UI --> User : In điểm thưởng lên hóa đơn thanh toán
+    deactivate UI
+    note over User, DB
+    Trạng thái sau (Thành công): Quỹ điểm thưởng của khách hàng được trừ (khi đổi điểm)
+    hoặc cộng (sau khi thanh toán), điểm thưởng hiển thị trên hóa đơn.
+    end note
+end
+
+@enduml

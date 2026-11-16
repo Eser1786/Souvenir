@@ -1,0 +1,85 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam noteBackgroundColor #FFFDE7
+
+title Sequence Diagram - Trả hàng / Hoàn tiền (UC08)
+
+actor "Quản lý" as User
+boundary "Giao diện Trả hàng / Hoàn tiền" as UI
+control "Hệ thống xử lý\n(Thành phần hệ thống suy luận)" as Core
+database "Cơ sở dữ liệu" as DB
+actor "Cổng thanh toán" as Gateway
+
+note over User, Gateway
+Điều kiện trước:
+1. Người dùng đã đăng nhập với quyền Quản lý.
+2. Hóa đơn gốc đã thanh toán và có trong hệ thống.
+(Mở rộng «extend» từ UC07: Thanh toán hoặc lịch sử hóa đơn)
+end note
+
+User -> UI : 1. Mở chức năng "Trả hàng / Hoàn tiền"
+activate UI
+UI --> User : Hiển thị giao diện tra cứu hóa đơn trả hàng
+
+loop 2a. Tra cứu hóa đơn gốc (Mã hóa đơn / SĐT / Ngày mua)
+    User -> UI : 2. Nhập mã hóa đơn để tra cứu thông tin đơn mua gốc
+    UI -> Core : Gửi yêu cầu tìm kiếm hóa đơn gốc
+    activate Core
+    Core -> DB : Truy vấn thông tin hóa đơn đã thanh toán & thời hạn đổi trả
+    activate DB
+    DB --> Core : Trả về kết quả tra cứu hóa đơn
+    deactivate DB
+
+    alt Không tìm thấy hóa đơn
+        Core --> UI : Báo lỗi không tìm thấy hóa đơn
+        UI --> User : Hiển thị thông báo lỗi (yêu cầu tra cứu lại theo SĐT hoặc ngày mua)
+    else Tìm thấy hóa đơn hợp lệ
+        Core --> UI : Trả về chi tiết sản phẩm trong hóa đơn gốc
+        UI --> User : Hiển thị danh sách sản phẩm đã mua
+    end
+    deactivate Core
+end
+
+User -> UI : 3. Chọn sản phẩm cần trả, nhập số lượng (<= SL đã mua) và kiểm tra tình trạng hàng
+UI -> Core : Gửi thông tin sản phẩm & số lượng yêu cầu trả
+activate Core
+
+alt 3a. Hàng không đủ điều kiện trả (quá hạn / hư hỏng do khách / vượt SL mua)
+    Core --> UI : Cảnh báo không đạt điều kiện đổi trả theo chính sách
+    deactivate Core
+    UI --> User : Hiển thị thông báo từ chối đổi trả
+    note over User, Gateway
+    Trạng thái sau (Thất bại - 3a): Quản lý từ chối đổi trả theo chính sách,
+    không xuất phiếu trả, giữ nguyên dữ liệu hóa đơn gốc và tồn kho.
+    end note
+else Đủ điều kiện đổi trả
+    activate Core
+    Core -> Core : 4. Tính tổng tiền hoàn trả theo đơn giá mua gốc
+    Core --> UI : Hiển thị số tiền hoàn trả
+    UI --> User : Hiển thị chi tiết phiếu trả và số tiền cần hoàn
+    User -> UI : Nhấn "Xác nhận hoàn tiền"
+    UI -> Core : Gửi yêu cầu lập phiếu trả & hoàn kho
+    Core -> DB : 5. Tạo phiếu trả hàng, ghi nhận tiền hoàn vào báo cáo & cộng lại tồn kho
+    activate DB
+    DB --> Core : Xác nhận lưu phiếu trả và cập nhật tồn kho thành công
+    deactivate DB
+
+    opt Hoàn tiền qua chuyển khoản / ví điện tử
+        Core -> Gateway : Gửi yêu cầu giao dịch hoàn tiền cho khách
+        activate Gateway
+        Gateway --> Core : Xác nhận giao dịch hoàn tiền thành công
+        deactivate Gateway
+    end
+
+    Core --> UI : Xác nhận hoàn tất quy trình trả hàng / hoàn tiền
+    deactivate Core
+    UI --> User : Hiển thị thông báo hoàn tất & xuất phiếu trả hàng (Quản lý hoàn tiền cho khách)
+    deactivate UI
+    note over User, Gateway
+    Trạng thái sau (Thành công): Phiếu trả hàng/hoàn tiền được lập, số tiền hoàn
+    ghi nhận vào báo cáo, số lượng sản phẩm được cộng trả lại tồn kho.
+    end note
+end
+
+@enduml

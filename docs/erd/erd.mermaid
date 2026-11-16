@@ -1,0 +1,209 @@
+erDiagram
+    %% =====================================================================
+    %% A. BẢNG THAM SỐ HỆ THỐNG (Đảm bảo tính tiến hóa)
+    %% =====================================================================
+    THAM_SO {
+        string tenThamSo PK
+        string kieuDuLieu
+        string giaTri
+        string moTa
+    }
+
+    %% =====================================================================
+    %% B. CÁC BẢNG DANH MỤC (Đảm bảo tính tiến hóa)
+    %% =====================================================================
+    VAI_TRO {
+        int id PK
+        string tenVaiTro UK
+        string moTa
+    }
+
+    DANH_MUC_SAN_PHAM {
+        int id PK
+        string tenDanhMuc UK
+        string trangThai
+    }
+
+    DON_VI_TINH {
+        int id PK
+        string tenDonVi UK
+    }
+
+    HINH_THUC_THANH_TOAN {
+        int id PK
+        string tenHinhThuc UK
+        string trangThai
+    }
+
+    %% =====================================================================
+    %% C. CÁC BẢNG NGHIỆP VỤ CHÍNH (15 BẢNG)
+    %% =====================================================================
+    NGUOI_DUNG {
+        int id PK
+        int vaiTroId FK
+        string tenDangNhap UK
+        string matKhau
+        string hoTen
+        string soDienThoai
+        string trangThai
+    }
+
+    NHA_CUNG_CAP {
+        int id PK
+        string maNCC UK
+        string tenNCC
+        string soDienThoai
+        string diaChi
+    }
+
+    SAN_PHAM {
+        int id PK
+        int danhMucId FK
+        int donViTinhId FK
+        string maSP UK
+        string tenSP
+        decimal giaNhap
+        decimal giaBan
+        int soLuongTon
+        string trangThai
+    }
+
+    KHACH_HANG {
+        int id PK
+        string soDienThoai UK
+        string tenKhachHang
+        int diemTichLuy
+    }
+
+    MA_GIAM_GIA {
+        int id PK
+        string maCode UK
+        string tenVoucher
+        string loaiGiamGia
+        decimal giaTriGiam
+        datetime ngayBatDau
+        datetime ngayKetThuc
+    }
+
+    CA_LAM_VIEC {
+        int id PK
+        int nguoiDungId FK
+        datetime thoiGianMoCa
+        datetime thoiGianChotCa
+        decimal tienMatBanGiao
+        decimal tienMatThucTe
+    }
+
+    CHAM_CONG {
+        int id PK
+        int nguoiDungId FK
+        int caLamViecId FK
+        datetime gioCheckIn
+        datetime gioCheckOut
+    }
+
+    DON_HANG {
+        int id PK
+        int caLamViecId FK
+        int khachHangId FK
+        int nguoiDungId FK
+        int maGiamGiaId FK
+        int hinhThucThanhToanId FK
+        datetime ngayTao
+        decimal tongTienThanhToan
+        string trangThai
+    }
+
+    CHI_TIET_DON_HANG {
+        int donHangId PK, FK
+        int sanPhamId PK, FK
+        int soLuong
+        decimal donGia
+        decimal thanhTien
+    }
+
+    PHIEU_NHAP_KHO {
+        int id PK
+        string maPhieu UK
+        int nhaCungCapId FK
+        int nguoiDungId FK
+        decimal tongTienNhap
+        datetime ngayNhap
+    }
+
+    CHI_TIET_NHAP_KHO {
+        int phieuNhapKhoId PK, FK
+        int sanPhamId PK, FK
+        int soLuongNhap
+        decimal donGiaNhap
+        decimal thanhTien
+    }
+
+    PHIEU_KIEM_KE {
+        int id PK
+        string maPhieu UK
+        int nguoiDungId FK
+        datetime ngayKiemKe
+        string trangThai
+    }
+
+    CHI_TIET_KIEM_KE {
+        int phieuKiemKeId PK, FK
+        int sanPhamId PK, FK
+        int soTonSoSach
+        int soTonThucTe
+        int soLuongChenhLech
+        string lyDoChenhLech
+    }
+
+    PHIEU_TRA_HANG {
+        int id PK
+        string maPhieu UK
+        int donHangGocId FK
+        int nguoiDungId FK
+        decimal tongTienHoan
+        string lyDoTra
+        datetime ngayTra
+    }
+
+    CHI_TIET_TRA_HANG {
+        int phieuTraHangId PK, FK
+        int sanPhamId PK, FK
+        int soLuongTra
+        decimal donGiaHoan
+        string tinhTrangHang
+    }
+
+    %% =====================================================================
+    %% D. CÁC MỐI QUAN HỆ KHÓA NGOẠI (RELATIONSHIPS)
+    %% =====================================================================
+    VAI_TRO ||--o{ NGUOI_DUNG : "phan quyen (1 - n)"
+    DANH_MUC_SAN_PHAM ||--o{ SAN_PHAM : "phan loai (1 - n)"
+    DON_VI_TINH ||--o{ SAN_PHAM : "don vi (1 - n)"
+
+    NGUOI_DUNG ||--o{ CA_LAM_VIEC : "mo/chot ca (1 - n)"
+    NGUOI_DUNG ||--o{ CHAM_CONG : "cham cong (1 - n)"
+    CA_LAM_VIEC ||--|| CHAM_CONG : "gan lien (1 - 1)"
+
+    CA_LAM_VIEC ||--o{ DON_HANG : "phat sinh (1 - n)"
+    NGUOI_DUNG ||--o{ DON_HANG : "lap don (1 - n)"
+    KHACH_HANG ||--o{ DON_HANG : "mua hang (1 - n)"
+    MA_GIAM_GIA ||--o{ DON_HANG : "ap dung (1 - n)"
+    HINH_THUC_THANH_TOAN ||--o{ DON_HANG : "thanh toan (1 - n)"
+
+    DON_HANG ||--|{ CHI_TIET_DON_HANG : "chua (1 - n)"
+    SAN_PHAM ||--o{ CHI_TIET_DON_HANG : "thuoc (1 - n)"
+
+    NHA_CUNG_CAP ||--o{ PHIEU_NHAP_KHO : "cung cap (1 - n)"
+    NGUOI_DUNG ||--o{ PHIEU_NHAP_KHO : "lap phieu nhap (1 - n)"
+    PHIEU_NHAP_KHO ||--|{ CHI_TIET_NHAP_KHO : "gom (1 - n)"
+    SAN_PHAM ||--o{ CHI_TIET_NHAP_KHO : "duoc nhap (1 - n)"
+
+    NGUOI_DUNG ||--o{ PHIEU_KIEM_KE : "kiem ke (1 - n)"
+    PHIEU_KIEM_KE ||--|{ CHI_TIET_KIEM_KE : "chi tiet (1 - n)"
+    SAN_PHAM ||--o{ CHI_TIET_KIEM_KE : "doi chieu (1 - n)"
+
+    DON_HANG ||--o{ PHIEU_TRA_HANG : "phat sinh tra (1 - n)"
+    NGUOI_DUNG ||--o{ PHIEU_TRA_HANG : "duyet tra (1 - n)"
+    PHIEU_TRA_HANG ||--|{ CHI_TIET_TRA_HANG : "gom (1 - n)"
+    SAN_PHAM ||--o{ CHI_TIET_TRA_HANG : "hoan tra (1 - n)"
