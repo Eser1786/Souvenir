@@ -22,3 +22,8 @@ postgres_data/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Agent Rules (Local Only)
+GEMINI.md
+AGENTS.md
+.agents/
