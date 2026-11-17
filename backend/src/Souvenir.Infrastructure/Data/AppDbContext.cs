@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Souvenir.Application.Interfaces;
 using Souvenir.Domain.Entities;
+using Souvenir.Infrastructure.Data.Configurations;
 
 namespace Souvenir.Infrastructure.Data;
 
@@ -17,10 +18,18 @@ public class AppDbContext : DbContext, IApplicationDbContext
     public DbSet<DanhMucSanPham> DanhMucSanPhams => Set<DanhMucSanPham>();
     public DbSet<DonViTinh> DonViTinhs => Set<DonViTinh>();
     public DbSet<MaGiamGia> MaGiamGias => Set<MaGiamGia>();
+    public DbSet<HinhThucThanhToan> HinhThucThanhToans => Set<HinhThucThanhToan>();
+    public DbSet<DonHang> DonHangs => Set<DonHang>();
+    public DbSet<ChiTietDonHang> ChiTietDonHangs => Set<ChiTietDonHang>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // UC07 - Đơn hàng & Thanh toán (cấu hình tách riêng trong Data/Configurations)
+        modelBuilder.ApplyConfiguration(new HinhThucThanhToanConfiguration());
+        modelBuilder.ApplyConfiguration(new DonHangConfiguration());
+        modelBuilder.ApplyConfiguration(new ChiTietDonHangConfiguration());
 
         modelBuilder.Entity<VaiTro>(entity =>
         {
