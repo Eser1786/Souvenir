@@ -156,6 +156,19 @@ public static class DbSeeder
             }
         }
 
+        // 5. Seed Default Customers if none exist
+        if (!await context.KhachHangs.AnyAsync())
+        {
+            context.KhachHangs.AddRange(
+                new KhachHang { TenKhachHang = "Nguyễn Ngọc Lan", SoDienThoai = "0901234567", DiemTichLuy = 250 },
+                new KhachHang { TenKhachHang = "Trần Văn An", SoDienThoai = "0987654321", DiemTichLuy = 120 },
+                new KhachHang { TenKhachHang = "Lê Thị Mai", SoDienThoai = "0912345678", DiemTichLuy = 50 },
+                new KhachHang { TenKhachHang = "Phạm Hoàng Nam", SoDienThoai = "0933456789", DiemTichLuy = 520 },
+                new KhachHang { TenKhachHang = "Đỗ Phương Thảo", SoDienThoai = "0977889900", DiemTichLuy = 15 }
+            );
+            await context.SaveChangesAsync();
+        }
+
         await context.SaveChangesAsync();
 
         // 5. Seed Mã giảm giá (Vouchers)
