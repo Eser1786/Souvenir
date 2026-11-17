@@ -6,7 +6,11 @@ import type { Product } from '../../api/products';
 import { checkDiscount, type CheckDiscountResponse } from '../../api/discounts';
 import { PaymentModal } from '../Payment/PaymentModal';
 import { findCustomerByPhone } from '../../api/customers';
+import { OpenShiftModal } from '../Shifts/OpenShiftModal';
+import { CloseShiftModal } from '../Shifts/CloseShiftModal';
+import { AttendanceModal } from '../Shifts/AttendanceModal';
 import './PosScreen.css';
+import { shiftApi, type ShiftInfo } from '../../api/shiftApi';
 
 interface CartItem {
   product: Product;
@@ -449,6 +453,31 @@ export const PosScreen: React.FC = () => {
   // UC07: mở Modal thanh toán (components/Payment/PaymentModal.tsx - Người 3)
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
+  // UC02 & UC03: Ca làm việc & Chấm công
+  const [currentShift, setCurrentShift] = useState<ShiftInfo | null>(null);
+  const [isShiftLoaded, setIsShiftLoaded] = useState(false);
+  const [isOpenShiftModal, setIsOpenShiftModal] = useState(false);
+  const [isCloseShiftModal, setIsCloseShiftModal] = useState(false);
+  const [isAttendanceModal, setIsAttendanceModal] = useState(false);
+
+  const fetchCurrentShift = async () => {
+    try {
+      const data = await shiftApi.getCurrentShift();
+      setCurrentShift(data);
+      if (!data) {
+        setIsOpenShiftModal(true); // Tự động bật popup Mở ca nếu chưa có ca
+      }
+    } catch {
+      // Bỏ qua nếu lỗi mạng tạm thời
+    } finally {
+      setIsShiftLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    fetchCurrentShift();
+  }, []);
+
   const handleCheckout = () => {
     if (cart.length === 0) {
       showToast('Vui lòng chọn sản phẩm trước khi thanh toán!', 'error');
@@ -507,7 +536,7 @@ export const PosScreen: React.FC = () => {
             <button
               type="button"
               className="nav-item"
-              onClick={() => showToast('Mở giao diện Chấm công (In/Out)...', 'info')}
+              onClick={() => setIsAttendanceModal(true)}
             >
               <span className="nav-icon"><IconTime /></span>
               <span>Chấm công</span>
@@ -515,10 +544,16 @@ export const PosScreen: React.FC = () => {
             <button
               type="button"
               className="nav-item"
-              onClick={() => showToast('Mở giao diện Mở/Chốt ca...', 'info')}
+              onClick={() => {
+                if (currentShift) {
+                  setIsCloseShiftModal(true);
+                } else {
+                  setIsOpenShiftModal(true);
+                }
+              }}
             >
               <span className="nav-icon"><IconShift /></span>
-              <span>Mở/Chốt ca</span>
+              <span>{currentShift ? `Chốt ca (#${currentShift.id})` : 'Mở ca'}</span>
             </button>
             <button
               type="button"
@@ -1058,6 +1093,41 @@ export const PosScreen: React.FC = () => {
         soTienGiam={totalDiscount}
         tongThanhToan={grandTotal}
         maGiamGia={appliedVoucher?.hopLe ? appliedVoucher.maCode : undefined}
+      />
+
+      {/* UC02 & UC03: Modals Ca làm việc & Chấm công */}
+      {isShiftLoaded && (
+        <OpenShiftModal
+          isOpen={isOpenShiftModal}
+          onShiftOpened={(newShift) => {
+            setCurrentShift(newShift);
+            setIsOpenShiftModal(false);
+            showToast(`Đã mở ca #${newShift.id} và tự động Check-in!`);
+          }}
+        />
+      )}
+
+      {currentShift && (
+        <CloseShiftModal
+          shift={currentShift}
+          isOpen={isCloseShiftModal}
+          onClose={() => setIsCloseShiftModal(false)}
+          onShiftClosed={() => {
+            setIsCloseShiftModal(false);
+            setCurrentShift(null);
+            showToast('Đã chốt ca làm việc thành công!');
+          }}
+        />
+      )}
+
+      <AttendanceModal
+        isOpen={isAttendanceModal}
+        shift={currentShift}
+        onClose={() => setIsAttendanceModal(false)}
+        onUpdated={() => {
+          fetchCurrentShift();
+          showToast('Đã cập nhật trạng thái chấm công!');
+        }}
       />
 
       {/* Toast thông báo phản hồi */}

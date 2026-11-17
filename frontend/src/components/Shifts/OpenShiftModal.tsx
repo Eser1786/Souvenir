@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { isAxiosError } from 'axios';
 import { shiftApi, type ShiftInfo } from '../../api/shiftApi';
 
 interface Props {
@@ -26,24 +27,52 @@ export const OpenShiftModal: React.FC<Props> = ({ isOpen, onShiftOpened }) => {
       setError(null);
       const shift = await shiftApi.openShift(amount);
       onShiftOpened(shift);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Không thể mở ca làm việc.');
+    } catch (err) {
+      if (isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Không thể mở ca làm việc.');
+      } else {
+        setError('Đã xảy ra lỗi không xác định.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-        <h2 className="text-xl font-bold text-gray-800">Mở ca làm việc mới</h2>
-        <p className="mt-1 text-sm text-gray-500">
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10000,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
+          padding: '24px',
+          width: '100%',
+          maxWidth: '420px',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+        }}
+      >
+        <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937', margin: 0 }}>
+          Mở ca làm việc mới
+        </h2>
+        <p style={{ marginTop: '6px', fontSize: '14px', color: '#6b7280' }}>
           Vui lòng kiểm đếm và nhập số tiền mặt bàn giao trong két trước khi bán hàng. Hệ thống sẽ tự động chấm công vào ca.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151' }}>
               Tiền mặt đầu ca (VNĐ)
             </label>
             <input
@@ -52,17 +81,40 @@ export const OpenShiftModal: React.FC<Props> = ({ isOpen, onShiftOpened }) => {
               step={1000}
               value={initialCash}
               onChange={(e) => setInitialCash(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-lg font-semibold focus:border-blue-600 focus:outline-none"
+              style={{
+                marginTop: '6px',
+                width: '100%',
+                boxSizing: 'border-box',
+                borderRadius: '8px',
+                border: '1px solid #d1d5db',
+                padding: '10px 12px',
+                fontSize: '18px',
+                fontWeight: 600,
+              }}
               required
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <p style={{ marginTop: '8px', fontSize: '13px', color: '#dc2626' }}>{error}</p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            style={{
+              marginTop: '16px',
+              width: '100%',
+              borderRadius: '8px',
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              padding: '10px',
+              fontSize: '15px',
+              fontWeight: 600,
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+            }}
           >
             {loading ? 'Đang mở ca...' : 'Xác nhận Mở ca & Check-in'}
           </button>
