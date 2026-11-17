@@ -4,6 +4,7 @@ import { useAuth } from '../../context';
 import { getProducts } from '../../api/products';
 import type { Product } from '../../api/products';
 import { checkDiscount, type CheckDiscountResponse } from '../../api/discounts';
+import { PaymentModal } from '../Payment/PaymentModal';
 import './PosScreen.css';
 
 interface CartItem {
@@ -434,16 +435,26 @@ export const PosScreen: React.FC = () => {
     showToast(`Đã lưu đơn nháp #${draftCount + 1} thành công!`);
   };
 
+  // UC07: mở Modal thanh toán (components/Payment/PaymentModal.tsx - Người 3)
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+
   const handleCheckout = () => {
     if (cart.length === 0) {
       showToast('Vui lòng chọn sản phẩm trước khi thanh toán!', 'error');
       return;
     }
-    showToast(`Thanh toán thành công ${formatVND(grandTotal)} cho đơn hàng!`);
+    setIsPaymentOpen(true);
+  };
+
+  const handlePaymentSuccess = (order: { maDonHang: string; tongTienThanhToan: number }) => {
+    setIsPaymentOpen(false);
+    showToast(`Đơn ${order.maDonHang}: thanh toán thành công ${formatVND(order.tongTienThanhToan)}!`);
     setCart([]);
     setAppliedVoucher(null);
     setVoucherInput('');
     setUseLoyaltyPoints(false);
+    // Tải lại tồn kho sau khi đã trừ
+    getProducts({ category: selectedCategory, search: searchQuery }).then(setProducts).catch(() => undefined);
   };
 
   const handleLogout = () => {
@@ -1010,6 +1021,23 @@ export const PosScreen: React.FC = () => {
           </div>
         </div>
       </aside>
+
+      {/* UC07: Modal thanh toán */}
+      <PaymentModal
+        isOpen={isPaymentOpen}
+        onClose={() => setIsPaymentOpen(false)}
+        onSuccess={handlePaymentSuccess}
+        items={cart.map((item) => ({
+          sanPhamId: item.product.id,
+          tenSP: item.product.tenSP,
+          soLuong: item.quantity,
+          donGia: item.product.giaBan,
+        }))}
+        tongTienHang={subtotal}
+        soTienGiam={totalDiscount}
+        tongThanhToan={grandTotal}
+        maGiamGia={appliedVoucher?.hopLe ? appliedVoucher.maCode : undefined}
+      />
 
       {/* Toast thông báo phản hồi */}
       {toastMessage && (

@@ -1,0 +1,424 @@
+/* ========================================================
+   UC07 · MODAL THANH TOÁN (Người 3)
+   Dùng chung bảng màu với PosScreen (be/nâu pastel MERA)
+   ======================================================== */
+
+.pay-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: rgba(28, 28, 30, 0.45);
+  backdrop-filter: blur(2px);
+  animation: pay-fade-in 0.15s ease;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1C1C1E;
+}
+
+.pay-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background-color: #FFFFFF;
+  border: 1px solid #EDE8E1;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(90, 82, 76, 0.18);
+  padding: 22px 22px 18px;
+  animation: pay-pop-in 0.18s ease;
+}
+
+@keyframes pay-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pay-pop-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* ---------- Header ---------- */
+.pay-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pay-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1C1C1E;
+}
+
+.pay-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #8C827A;
+}
+
+.pay-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #8C827A;
+  cursor: pointer;
+}
+
+.pay-close:hover { background-color: #F8F6F2; color: #1C1C1E; }
+
+/* ---------- Tổng tiền ---------- */
+.pay-amount-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #FAF8F5;
+  border: 1px solid #EDE8E1;
+  border-radius: 12px;
+}
+
+.pay-amount-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8C827A;
+}
+
+.pay-amount-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: #785E3A;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-amount-note {
+  font-size: 12px;
+  color: #A89F91;
+}
+
+/* ---------- Tabs ---------- */
+.pay-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 16px;
+  background-color: #F4EBE1;
+  border-radius: 10px;
+}
+
+.pay-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5A524C;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pay-tab:hover:not(.active) { color: #1C1C1E; }
+
+.pay-tab.active {
+  background-color: #FFFFFF;
+  color: #785E3A;
+  box-shadow: 0 1px 3px rgba(90, 82, 76, 0.15);
+}
+
+/* ---------- Panel chung ---------- */
+.pay-panel { margin-bottom: 14px; }
+
+.pay-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5A524C;
+}
+
+.pay-input-wrap { position: relative; }
+
+.pay-input {
+  width: 100%;
+  height: 52px;
+  padding: 0 40px 0 14px;
+  box-sizing: border-box;
+  border: 1px solid #D6CCC2;
+  border-radius: 10px;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: right;
+  color: #1C1C1E;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pay-input:focus {
+  border-color: #BBA282;
+  box-shadow: 0 0 0 3px rgba(187, 162, 130, 0.25);
+}
+
+.pay-input-suffix {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  font-weight: 600;
+  color: #8C827A;
+}
+
+.pay-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 14px;
+}
+
+.pay-chip {
+  padding: 6px 12px;
+  border: 1px solid #D6CCC2;
+  border-radius: 999px;
+  background-color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4B453E;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pay-chip:hover { background-color: #F8F6F2; }
+
+.pay-chip.active {
+  border-color: #BBA282;
+  background-color: #FDF1E6;
+  color: #785E3A;
+}
+
+.pay-change {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background-color: #D1FAE5;
+  color: #065F46;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pay-change.short {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+}
+
+.pay-change-value {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- QR ---------- */
+.pay-qr-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pay-qr-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 240px;
+  height: 240px;
+  padding: 8px;
+  margin-bottom: 12px;
+  background-color: #FFFFFF;
+  border: 1px solid #EDE8E1;
+  border-radius: 12px;
+}
+
+.pay-qr-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pay-qr-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  font-size: 12px;
+  text-align: center;
+  color: #8C827A;
+}
+
+.pay-qr-info {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #FAF8F5;
+  border: 1px solid #EDE8E1;
+  border-radius: 10px;
+}
+
+.pay-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  text-align: center;
+  color: #A89F91;
+}
+
+.pay-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #967858;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Dòng thông tin ---------- */
+.pay-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #5A524C;
+}
+
+.pay-row span:last-child {
+  font-weight: 600;
+  color: #1C1C1E;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-row.strong span { font-weight: 700; color: #1C1C1E; }
+.pay-row.strong span:last-child { color: #785E3A; }
+.pay-row.discount span:last-child { color: #B91C1C; }
+.pay-row.change span:last-child { color: #065F46; font-size: 15px; font-weight: 800; }
+.pay-row .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* ---------- Lỗi ---------- */
+.pay-error {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  background-color: #FEF2F2;
+  font-size: 13px;
+  color: #B91C1C;
+}
+
+/* ---------- Nút ---------- */
+.pay-footer {
+  display: flex;
+  gap: 10px;
+}
+
+.pay-btn-secondary,
+.pay-btn-primary {
+  flex: 1;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pay-btn-secondary {
+  background-color: #FFFFFF;
+  border: 1px solid #D6CCC2;
+  color: #4B453E;
+}
+
+.pay-btn-secondary:hover:not(:disabled) { background-color: #F8F6F2; }
+
+.pay-btn-primary {
+  flex: 1.4;
+  background-color: #BBA282;
+  border: none;
+  color: #FFFFFF;
+}
+
+.pay-btn-primary:hover:not(:disabled) { background-color: #AC916E; }
+
+.pay-btn-primary:disabled,
+.pay-btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------- Thành công ---------- */
+.pay-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.pay-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  margin: 6px 0 12px;
+  border-radius: 50%;
+  background-color: #D1FAE5;
+  color: #10B981;
+}
+
+.pay-success-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.pay-success-sub {
+  margin: 6px 0 16px;
+  font-size: 13px;
+  color: #8C827A;
+}
+
+.pay-receipt {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background-color: #FAF8F5;
+  border: 1px dashed #D6CCC2;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.pay-success .pay-btn-primary {
+  width: 100%;
+  flex: none;
+}
+
+@media (max-width: 480px) {
+  .pay-modal { padding: 18px 16px 14px; }
+  .pay-amount-value { font-size: 26px; }
+  .pay-footer { flex-direction: column-reverse; }
+}

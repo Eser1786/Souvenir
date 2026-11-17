@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Souvenir.Domain.Entities;
 
 namespace Souvenir.Application.Interfaces;
@@ -12,6 +13,12 @@ public interface IApplicationDbContext
     DbSet<DanhMucSanPham> DanhMucSanPhams { get; }
     DbSet<DonViTinh> DonViTinhs { get; }
     DbSet<MaGiamGia> MaGiamGias { get; }
+    DbSet<HinhThucThanhToan> HinhThucThanhToans { get; }
+    DbSet<DonHang> DonHangs { get; }
+    DbSet<ChiTietDonHang> ChiTietDonHangs { get; }
+
+    /// <summary>Dùng để mở transaction (UC07 tạo đơn + trừ kho).</summary>
+    DatabaseFacade Database { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

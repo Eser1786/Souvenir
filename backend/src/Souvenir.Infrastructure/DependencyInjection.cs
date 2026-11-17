@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Souvenir.Application.Interfaces;
 using Souvenir.Infrastructure.Data;
 using Souvenir.Infrastructure.Security;
+using Souvenir.Infrastructure.Services;
 
 namespace Souvenir.Infrastructure;
 
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<ICaLamViecLookup, CaLamViecLookup>();
 
         return services;
     }
