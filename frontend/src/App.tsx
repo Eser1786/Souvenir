@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context';
 import { LoginScreen } from './components/Login/LoginScreen';
 import { PosScreen } from './components/Pos/PosScreen';
+import { UsersManagementScreen } from './components/UsersManagement/UsersManagementScreen';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -30,6 +31,14 @@ export const AppContent: React.FC = () => {
         element={
           <ProtectedRoute>
             <PosScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <UsersManagementScreen />
           </ProtectedRoute>
         }
       />
