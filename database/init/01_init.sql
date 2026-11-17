@@ -106,6 +106,8 @@ CREATE TABLE CA_LAM_VIEC (
     thoiGianChotCa TIMESTAMP NULL,
     tienMatBanGiao NUMERIC(18, 2) NOT NULL CHECK (tienMatBanGiao >= 0),
     tienMatThucTe NUMERIC(18, 2) NULL CHECK (tienMatThucTe >= 0),
+    trangThai VARCHAR(50) NOT NULL DEFAULT 'DANG_MO',
+    lyDoChenhLech VARCHAR(500) NULL;
     CONSTRAINT FK_CaLamViec_NguoiDung FOREIGN KEY (nguoiDungId) REFERENCES NGUOI_DUNG(id)
 );
 
