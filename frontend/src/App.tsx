@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context';
 import { LoginScreen } from './components/Login/LoginScreen';
 import { PosScreen } from './components/Pos/PosScreen';
 import { CustomerManagementScreen } from './components/Customer/CustomerManagementScreen';
+import { UsersManagementScreen } from './components/UsersManagement/UsersManagementScreen';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -39,6 +40,14 @@ export const AppContent: React.FC = () => {
         element={
           <ProtectedRoute>
             <CustomerManagementScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <UsersManagementScreen />
           </ProtectedRoute>
         }
       />

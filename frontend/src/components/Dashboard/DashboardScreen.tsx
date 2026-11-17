@@ -80,6 +80,21 @@ export const DashboardScreen: React.FC = () => {
             </p>
             <span className="module-btn">Xem danh sách khách hàng →</span>
           </div>
+
+          {roleClass === 'quanly' && (
+            <div
+              className="module-card clickable-card"
+              onClick={() => navigate('/users')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="module-icon-box">🛡️</div>
+              <h2 className="module-title">Nhân sự &amp; Phân quyền</h2>
+              <p className="module-desc">
+                Quản lý danh sách nhân viên, tài khoản đăng nhập và phân quyền truy cập hệ thống.
+              </p>
+              <span className="module-btn">Quản lý nhân viên →</span>
+            </div>
+          )}
         </div>
       </main>
     </div>
