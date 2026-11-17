@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context';
 import { getProducts } from '../../api/products';
 import type { Product } from '../../api/products';
+import { checkDiscount, type CheckDiscountResponse } from '../../api/discounts';
 import './PosScreen.css';
 
 interface CartItem {
@@ -16,6 +17,34 @@ interface Customer {
   diemThuong: number;
   isGuest: boolean;
 }
+
+interface Promotion {
+  code: string;
+  title: string;
+  discountBadge: string;
+  description: string;
+}
+
+const AVAILABLE_PROMOTIONS: Promotion[] = [
+  {
+    code: 'QUATANG10',
+    title: 'Voucher Quà Tặng Anime',
+    discountBadge: 'Giảm 10%',
+    description: 'Áp dụng cho mọi đơn hàng quà lưu niệm',
+  },
+  {
+    code: 'GIAM10K',
+    title: 'Ưu Đãi Trừ Thẳng',
+    discountBadge: 'Giảm 10.000đ',
+    description: 'Trừ trực tiếp 10.000đ vào tổng hóa đơn',
+  },
+  {
+    code: 'TRIAN50K',
+    title: 'Tri Ân Khách Hàng',
+    discountBadge: 'Giảm 50.000đ',
+    description: 'Ưu đãi tri ân thành viên cửa hàng',
+  },
+];
 
 const CATEGORIES = [
   'Tất cả',
@@ -39,7 +68,7 @@ const GUEST_CUSTOMER: Customer = {
   isGuest: true,
 };
 
-// Clean minimalist SVG icons
+// SVG icons
 const IconPos = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="3" width="20" height="14" rx="2" />
@@ -120,31 +149,56 @@ export const PosScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Cart State (Initialized with Figma Screen 02 sample products)
+  // Cart State (UC04)
   const [cart, setCart] = useState<CartItem[]>([]);
   const [draftCount, setDraftCount] = useState(3);
-  const initializedDemoCartRef = useRef(false);
 
   // Customer State
   const [customer, setCustomer] = useState<Customer>(DEFAULT_CUSTOMER);
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [customerPhoneInput, setCustomerPhoneInput] = useState('0901 234 567');
 
-  // Discount & Promotion State
-  const [appliedVoucher] = useState<{ code: string; discountPercent: number } | null>({
-    code: 'QUATANG10',
-    discountPercent: 10,
-  });
-  const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(true);
+  // Voucher & Discount State (UC05)
+  const [voucherInput, setVoucherInput] = useState('');
+  const [isCheckingVoucher, setIsCheckingVoucher] = useState(false);
+  const [appliedVoucher, setAppliedVoucher] = useState<CheckDiscountResponse | null>(null);
+  const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
+  const [showVoucherDropdown, setShowVoucherDropdown] = useState(false);
+  const voucherContainerRef = useRef<HTMLDivElement>(null);
+
+  // Click outside listener for voucher autocomplete dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        voucherContainerRef.current &&
+        !voucherContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowVoucherDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Filter available promotions based on user input
+  const filteredPromotions = useMemo(() => {
+    const q = voucherInput.trim().toUpperCase();
+    if (!q) return AVAILABLE_PROMOTIONS;
+    return AVAILABLE_PROMOTIONS.filter(
+      (p) => p.code.includes(q) || p.title.toUpperCase().includes(q)
+    );
+  }, [voucherInput]);
 
   // Toast Feedback State
-  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
 
-  const showToast = (text: string, type: 'success' | 'info' = 'success') => {
+  const showToast = (text: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => {
       setToastMessage(null);
-    }, 3000);
+    }, 3500);
   };
 
   // Determine user role
@@ -165,19 +219,6 @@ export const PosScreen: React.FC = () => {
         if (!ignore) {
           setProducts(data);
           setIsLoading(false);
-
-          // Populate initial Figma Screen 02 demo items on first load
-          if (!initializedDemoCartRef.current && data.length > 0) {
-            initializedDemoCartRef.current = true;
-            const teddy = data.find((p) => p.maSP === 'GB001');
-            const lysu = data.find((p) => p.maSP === 'LY002');
-            const demoItems: CartItem[] = [];
-            if (teddy) demoItems.push({ product: teddy, quantity: 1 });
-            if (lysu) demoItems.push({ product: lysu, quantity: 2 });
-            if (demoItems.length > 0) {
-              setCart(demoItems);
-            }
-          }
         }
       })
       .catch(() => {
@@ -206,10 +247,12 @@ export const PosScreen: React.FC = () => {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
   };
 
-  // Cart operations
+  // ========================================================
+  // UC04: THAO TÁC GIỎ HÀNG (THÊM, BỚT, XÓA MÓN, ĐƠN MỚI)
+  // ========================================================
   const handleAddToCart = (product: Product) => {
     if (product.soLuongTon <= 0) {
-      showToast('Sản phẩm đã hết hàng trong kho!', 'info');
+      showToast(`Sản phẩm "${product.tenSP}" đã hết hàng trong kho!`, 'error');
       return;
     }
 
@@ -217,7 +260,7 @@ export const PosScreen: React.FC = () => {
       const existing = prevCart.find((item) => item.product.id === product.id);
       if (existing) {
         if (existing.quantity >= product.soLuongTon) {
-          showToast(`Đã đạt số lượng tồn kho tối đa (${product.soLuongTon})!`, 'info');
+          showToast(`Đã đạt giới hạn tồn kho tối đa (${product.soLuongTon} cái)!`, 'info');
           return prevCart;
         }
         return prevCart.map((item) =>
@@ -238,9 +281,13 @@ export const PosScreen: React.FC = () => {
         .map((item) => {
           if (item.product.id === productId) {
             const newQty = item.quantity + delta;
-            if (newQty <= 0) return null;
+            if (newQty <= 0) {
+              // Xóa món khi giảm về 0
+              showToast(`Đã bỏ "${item.product.tenSP}" khỏi giỏ hàng.`, 'info');
+              return null;
+            }
             if (newQty > item.product.soLuongTon) {
-              showToast(`Số lượng tồn chỉ còn ${item.product.soLuongTon}!`, 'info');
+              showToast(`Số lượng tồn chỉ còn ${item.product.soLuongTon} sản phẩm!`, 'info');
               return item;
             }
             return { ...item, quantity: newQty };
@@ -252,13 +299,112 @@ export const PosScreen: React.FC = () => {
   };
 
   const handleRemoveItem = (productId: number) => {
-    setCart((prevCart) => prevCart.filter((item) => item.product.id !== productId));
+    const item = cart.find((i) => i.product.id === productId);
+    setCart((prevCart) => prevCart.filter((i) => i.product.id !== productId));
+    if (item) {
+      showToast(`Đã xóa "${item.product.tenSP}" khỏi giỏ hàng.`);
+    }
   };
 
   const handleClearCart = () => {
-    setCart([]);
-    showToast('Đã bắt đầu đơn mới (giỏ hàng trống)', 'info');
+    if (cart.length === 0) return;
+    if (window.confirm('Bạn có chắc muốn làm trống giỏ hàng để tạo đơn mới?')) {
+      setCart([]);
+      setAppliedVoucher(null);
+      setVoucherInput('');
+      showToast('Đã bắt đầu đơn mới (giỏ hàng trống)', 'info');
+    }
   };
+
+  // Quét mã vạch khi nhấn Enter ở ô tìm kiếm
+  const handleBarcodeSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      const query = searchQuery.trim().toUpperCase();
+      const found = products.find(
+        (p) => p.maSP.toUpperCase() === query || p.tenSP.toUpperCase().includes(query)
+      );
+      if (found) {
+        handleAddToCart(found);
+        setSearchQuery('');
+      } else {
+        showToast(`Không tìm thấy sản phẩm với mã: "${query}"`, 'error');
+      }
+    }
+  };
+
+  // ========================================================
+  // UC05: ÁP DỤNG MÃ GIẢM GIÁ (VOUCHER)
+  // ========================================================
+  const subtotal = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.product.giaBan * item.quantity, 0);
+  }, [cart]);
+
+  const handleApplyVoucher = async (codeOverride?: string, e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    const code = (codeOverride || voucherInput).trim().toUpperCase();
+    if (!code) {
+      showToast('Vui lòng nhập mã giảm giá (ví dụ: QUATANG10)', 'info');
+      return;
+    }
+
+    setVoucherInput(code);
+    setShowVoucherDropdown(false);
+
+    if (cart.length === 0) {
+      showToast('Giỏ hàng trống! Vui lòng chọn sản phẩm trước khi áp voucher.', 'error');
+      return;
+    }
+
+    setIsCheckingVoucher(true);
+    try {
+      // Gọi API POST /api/discounts/check
+      const res = await checkDiscount({
+        maCode: code,
+        tongTienHang: subtotal,
+      });
+
+      if (res.hopLe) {
+        setAppliedVoucher(res);
+        showToast(res.thongBao || `Áp dụng thành công mã ${res.maCode}!`, 'success');
+      } else {
+        showToast(res.thongBao || 'Mã giảm giá không hợp lệ hoặc đã hết hạn.', 'error');
+      }
+    } catch {
+      showToast('Lỗi khi kiểm tra mã giảm giá với máy chủ.', 'error');
+    } finally {
+      setIsCheckingVoucher(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherInput('');
+    showToast('Đã hủy áp dụng mã giảm giá.', 'info');
+  };
+
+  // Tính số tiền giảm giá thực tế
+  const voucherDiscount = useMemo(() => {
+    if (!appliedVoucher || !appliedVoucher.hopLe || cart.length === 0) return 0;
+    return appliedVoucher.soTienGiam;
+  }, [appliedVoucher, cart]);
+
+  const pointsDiscount = useMemo(() => {
+    if (!useLoyaltyPoints || customer.isGuest || cart.length === 0) return 0;
+    return 5000; // 50 điểm = 5.000đ theo Figma
+  }, [useLoyaltyPoints, customer, cart]);
+
+  const totalDiscount = useMemo(() => {
+    return voucherDiscount + pointsDiscount;
+  }, [voucherDiscount, pointsDiscount]);
+
+  const grandTotal = useMemo(() => {
+    return Math.max(0, subtotal - totalDiscount);
+  }, [subtotal, totalDiscount]);
+
+  const totalItemsCount = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }, [cart]);
 
   // Customer handlers
   const handleCustomerSearch = (e: React.FormEvent) => {
@@ -275,35 +421,6 @@ export const PosScreen: React.FC = () => {
     showToast('Đã cập nhật khách hàng thành viên!');
   };
 
-  // Financial calculations matching Figma Screen 02
-  const totalItemsCount = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.quantity, 0);
-  }, [cart]);
-
-  const subtotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.product.giaBan * item.quantity, 0);
-  }, [cart]);
-
-  const voucherDiscount = useMemo(() => {
-    if (!appliedVoucher || cart.length === 0) return 0;
-    return Math.round((subtotal * appliedVoucher.discountPercent) / 100);
-  }, [subtotal, appliedVoucher, cart]);
-
-  const pointsDiscount = useMemo(() => {
-    if (!useLoyaltyPoints || customer.isGuest || cart.length === 0) return 0;
-    // 50 points = 5.000 VND as per Figma design spec
-    return 5000;
-  }, [useLoyaltyPoints, customer, cart]);
-
-  const totalDiscount = useMemo(() => {
-    return voucherDiscount + pointsDiscount;
-  }, [voucherDiscount, pointsDiscount]);
-
-  const grandTotal = useMemo(() => {
-    return Math.max(0, subtotal - totalDiscount);
-  }, [subtotal, totalDiscount]);
-
-  // Actions
   const handleSaveDraft = () => {
     if (cart.length === 0) {
       showToast('Giỏ hàng trống, không thể lưu nháp!', 'info');
@@ -311,16 +428,22 @@ export const PosScreen: React.FC = () => {
     }
     setDraftCount((prev) => prev + 1);
     setCart([]);
+    setAppliedVoucher(null);
+    setVoucherInput('');
+    setUseLoyaltyPoints(false);
     showToast(`Đã lưu đơn nháp #${draftCount + 1} thành công!`);
   };
 
   const handleCheckout = () => {
     if (cart.length === 0) {
-      showToast('Vui lòng chọn sản phẩm trước khi thanh toán!', 'info');
+      showToast('Vui lòng chọn sản phẩm trước khi thanh toán!', 'error');
       return;
     }
     showToast(`Thanh toán thành công ${formatVND(grandTotal)} cho đơn hàng!`);
     setCart([]);
+    setAppliedVoucher(null);
+    setVoucherInput('');
+    setUseLoyaltyPoints(false);
   };
 
   const handleLogout = () => {
@@ -331,14 +454,13 @@ export const PosScreen: React.FC = () => {
   return (
     <div className="pos-layout">
       {/* ========================================================
-          CỘT 1: SIDEBAR BÊN TRÁI (Clean Minimalist Navigation)
+          CỘT 1: SIDEBAR BÊN TRÁI
           ======================================================== */}
       <aside className="pos-sidebar">
         <div className="sidebar-top-section">
-          {/* Brand & Role Header */}
           <div className="sidebar-header">
             <div className="sidebar-brand-name">MERA · SOUVENIR</div>
-            <div className="sidebar-brand-sub">Quản lý cửa hàng</div>
+            <div className="sidebar-brand-sub">Quản lý cửa hàng quà tặng</div>
             <div className="sidebar-badge-wrapper">
               <span className={`sidebar-role-badge ${isManager ? 'quanly' : ''}`}>
                 {isManager ? 'QUẢN LÝ' : 'NHÂN VIÊN'}
@@ -346,7 +468,6 @@ export const PosScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation Menu */}
           <nav className="sidebar-nav">
             <div className="nav-section-title">KHÔNG GIAN LÀM VIỆC</div>
             <button type="button" className="nav-item active">
@@ -394,7 +515,6 @@ export const PosScreen: React.FC = () => {
               <span>Sản phẩm</span>
             </button>
 
-            {/* RBAC Section: Managers only */}
             {isManager && (
               <>
                 <div className="nav-section-title" style={{ marginTop: '16px' }}>QUẢN TRỊ</div>
@@ -419,7 +539,6 @@ export const PosScreen: React.FC = () => {
           </nav>
         </div>
 
-        {/* Sidebar Footer User Box */}
         <div className="sidebar-footer">
           <div className="user-profile-box">
             <div className="user-display-name">
@@ -437,7 +556,6 @@ export const PosScreen: React.FC = () => {
           CỘT 2: KHU VỰC TRUNG TÂM (LƯỚI SẢN PHẨM POS)
           ======================================================== */}
       <main className="pos-center-area">
-        {/* Top Header */}
         <header className="pos-top-bar">
           <div className="top-bar-left">
             <div className="breadcrumb-row">
@@ -475,19 +593,20 @@ export const PosScreen: React.FC = () => {
           </div>
         </header>
 
-        {/* Flat Peach Search Bar */}
+        {/* Ô tìm kiếm & quét mã vạch */}
         <div className="pos-search-container">
           <span className="search-icon-inside"><IconSearch /></span>
           <input
             type="text"
             className="pos-search-input"
-            placeholder="Quét mã vạch/tìm sản phẩm"
+            placeholder="Quét mã vạch hoặc gõ tên sản phẩm (Nhấn Enter để thêm nhanh)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleBarcodeSearch}
           />
         </div>
 
-        {/* Horizontal Category Tabs */}
+        {/* Danh mục */}
         <div className="pos-category-tabs" role="tablist">
           {CATEGORIES.map((cat) => (
             <button
@@ -503,7 +622,7 @@ export const PosScreen: React.FC = () => {
           ))}
         </div>
 
-        {/* Product Grid Area (3 Columns strictly per Figma) */}
+        {/* Lưới sản phẩm */}
         <div className="pos-products-container">
           {isLoading ? (
             <div className="pos-loading-state">
@@ -562,26 +681,36 @@ export const PosScreen: React.FC = () => {
             </div>
           )}
 
-          {/* Grid Footer Subtitle */}
           {!isLoading && products.length > 0 && (
             <div className="products-grid-footer">
-              Hiển thị {products.length} / 128 sản phẩm · Quét mã để thêm nhanh vào giỏ
+              Hiển thị {products.length} sản phẩm · Nhấp chọn hoặc quét mã để thêm vào giỏ
             </div>
           )}
         </div>
       </main>
 
       {/* ========================================================
-          CỘT 3: KHUNG GIỎ HÀNG BÊN PHẢI (CART & SUMMARY)
+          CỘT 3: KHUNG GIỎ HÀNG BÊN PHẢI (CART & VOUCHER UC04, UC05)
           ======================================================== */}
       <aside className="pos-cart-panel">
-        {/* Cart Header */}
         <div className="cart-header">
           <h2 className="cart-title">Giỏ hàng</h2>
-          <span className="cart-count-label">{totalItemsCount} sản phẩm</span>
+          <div className="cart-header-actions">
+            <span className="cart-count-label">{totalItemsCount} món</span>
+            {cart.length > 0 && (
+              <button
+                type="button"
+                className="btn-clear-cart-link"
+                onClick={handleClearCart}
+                title="Xóa toàn bộ món trong giỏ"
+              >
+                Xóa tất cả
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Customer Input & Info */}
+        {/* Khách hàng */}
         <div className="customer-box">
           {isSearchingCustomer ? (
             <form onSubmit={handleCustomerSearch} className="customer-phone-form">
@@ -590,7 +719,7 @@ export const PosScreen: React.FC = () => {
                 className="customer-phone-input"
                 value={customerPhoneInput}
                 onChange={(e) => setCustomerPhoneInput(e.target.value)}
-                placeholder="SĐT khách hàng: 0901 234 567"
+                placeholder="SĐT: 0901 234 567"
                 autoFocus
               />
               <button type="submit" className="customer-btn-save">Lưu</button>
@@ -646,92 +775,207 @@ export const PosScreen: React.FC = () => {
           )}
         </div>
 
-        {/* Cart Items List */}
+        {/* UC04: Danh sách sản phẩm trong giỏ hàng */}
         <div className="cart-items-scroll">
           {cart.length === 0 ? (
             <div className="cart-empty-state">
-              <p>Chưa có sản phẩm trong giỏ.</p>
-              <span>Bấm (+) trên sản phẩm để thêm vào đơn.</span>
+              <div style={{ fontSize: '28px', marginBottom: '4px' }}>🛍️</div>
+              <p style={{ fontWeight: 600, color: '#4B453E', margin: 0 }}>Giỏ hàng đang trống</p>
+              <span style={{ fontSize: '11px', color: '#8C827A' }}>Nhấp chọn các sản phẩm bên cạnh để thêm vào đơn bán.</span>
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.product.id} className="cart-item-row">
-                <div className="cart-item-top">
-                  <span className="cart-item-name">{item.product.tenSP}</span>
-                  <span className="cart-item-price">
-                    {formatVND(item.product.giaBan * item.quantity)}
-                  </span>
-                </div>
-
-                <div className="cart-item-bottom">
-                  <div className="cart-stepper">
+              <div key={item.product.id} className="cart-item-card">
+                <img
+                  src={item.product.hinhAnh || '/products/teddy.png'}
+                  alt={item.product.tenSP}
+                  className="cart-item-thumb"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/products/teddy.png';
+                  }}
+                />
+                <div className="cart-item-content">
+                  <div className="cart-item-top">
+                    <span className="cart-item-name">{item.product.tenSP}</span>
+                    <span className="cart-item-price">
+                      {formatVND(item.product.giaBan * item.quantity)}
+                    </span>
+                  </div>
+                  <div className="cart-item-subline">
+                    Đơn giá: {formatVND(item.product.giaBan)} · Tồn: {item.product.soLuongTon}
+                  </div>
+                  <div className="cart-item-bottom">
+                    <div className="cart-stepper">
+                      <button
+                        type="button"
+                        className="stepper-btn"
+                        onClick={() => handleUpdateQuantity(item.product.id, -1)}
+                        title="Giảm số lượng"
+                      >
+                        −
+                      </button>
+                      <span className="stepper-value">{item.quantity}</span>
+                      <button
+                        type="button"
+                        className="stepper-btn"
+                        disabled={item.quantity >= item.product.soLuongTon}
+                        onClick={() => handleUpdateQuantity(item.product.id, 1)}
+                        title={item.quantity >= item.product.soLuongTon ? 'Đã hết hàng tồn' : 'Tăng số lượng'}
+                      >
+                        +
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      className="stepper-btn"
-                      onClick={() => handleUpdateQuantity(item.product.id, -1)}
+                      className="cart-remove-link"
+                      onClick={() => handleRemoveItem(item.product.id)}
+                      title="Xóa món này khỏi giỏ"
                     >
-                      −
-                    </button>
-                    <span className="stepper-value">{item.quantity}</span>
-                    <button
-                      type="button"
-                      className="stepper-btn"
-                      disabled={item.quantity >= item.product.soLuongTon}
-                      onClick={() => handleUpdateQuantity(item.product.id, 1)}
-                    >
-                      +
+                      Xóa món
                     </button>
                   </div>
-
-                  <button
-                    type="button"
-                    className="cart-remove-link"
-                    onClick={() => handleRemoveItem(item.product.id)}
-                  >
-                    Xóa
-                  </button>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Discount Box (Áp dụng giảm giá) */}
+        {/* ========================================================
+            UC05: Ô NHẬP VOUCHER & TÍNH TIỀN GIẢM GIÁ
+            ======================================================== */}
         <div className="cart-discount-box">
-          <div className="discount-box-title">Áp dụng giảm giá</div>
-          <div className="discount-box-line">
-            Voucher: {appliedVoucher ? `${appliedVoucher.code} / Giảm theo %: ${appliedVoucher.discountPercent}%` : 'Không có'}
+          <div className="discount-box-title-row">
+            <span className="discount-box-title">Khuyến mãi & Voucher</span>
           </div>
-          {voucherDiscount > 0 && (
-            <div className="discount-box-line">
-              Giảm giá đơn hàng: -{formatVND(voucherDiscount)}
+
+          {appliedVoucher && appliedVoucher.hopLe ? (
+            /* Khi voucher đã được áp dụng hợp lệ */
+            <div className="voucher-applied-card">
+              <div className="voucher-applied-info">
+                <span className="voucher-applied-code-badge">
+                  ✓ {appliedVoucher.maCode}
+                </span>
+                <span className="voucher-applied-desc">
+                  {appliedVoucher.tenVoucher} (-{formatVND(appliedVoucher.soTienGiam)})
+                </span>
+              </div>
+              <button
+                type="button"
+                className="voucher-btn-remove"
+                onClick={handleRemoveVoucher}
+                title="Hủy áp dụng mã này"
+              >
+                ✕ Bỏ mã
+              </button>
+            </div>
+          ) : (
+            /* Ô nhập mã Voucher khi chưa áp dụng (chuẩn Figma 100% kèm Autocomplete Dropdown) */
+            <div className="voucher-input-wrapper" ref={voucherContainerRef}>
+              <form onSubmit={(e) => handleApplyVoucher(undefined, e)} className="voucher-input-group">
+                <input
+                  type="text"
+                  className="voucher-input"
+                  placeholder="Nhập mã voucher (vd: QUATANG10)"
+                  value={voucherInput}
+                  onChange={(e) => {
+                    setVoucherInput(e.target.value.toUpperCase());
+                    setShowVoucherDropdown(true);
+                  }}
+                  onFocus={() => setShowVoucherDropdown(true)}
+                  disabled={isCheckingVoucher}
+                  autoComplete="off"
+                />
+                <button
+                  type="submit"
+                  className="voucher-btn-apply"
+                  disabled={isCheckingVoucher || !voucherInput.trim()}
+                >
+                  {isCheckingVoucher ? '...' : 'Áp dụng'}
+                </button>
+              </form>
+
+              {/* Autocomplete Dropdown - Xổ xuống khi nhấp vào ô nhập */}
+              {showVoucherDropdown && (
+                <div className="voucher-dropdown-menu">
+                  <div className="voucher-dropdown-header">
+                    <span>🏷️ Mã ưu đãi hiện có</span>
+                    <span className="voucher-dropdown-hint">Bấm để dùng nhanh</span>
+                  </div>
+                  <div className="voucher-dropdown-list">
+                    {filteredPromotions.map((promo) => (
+                      <div
+                        key={promo.code}
+                        className="voucher-dropdown-item"
+                        onClick={() => handleApplyVoucher(promo.code)}
+                      >
+                        <div className="voucher-dropdown-item-left">
+                          <span className="voucher-dropdown-code">{promo.code}</span>
+                          <span className="voucher-dropdown-title">{promo.title}</span>
+                          <span className="voucher-dropdown-desc">{promo.description}</span>
+                        </div>
+                        <div className="voucher-dropdown-item-right">
+                          <span className="voucher-dropdown-badge">{promo.discountBadge}</span>
+                          <span className="voucher-dropdown-use-btn">Dùng</span>
+                        </div>
+                      </div>
+                    ))}
+                    {filteredPromotions.length === 0 && (
+                      <div className="voucher-dropdown-empty">
+                        Không tìm thấy mã nào phù hợp với "{voucherInput}"
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Đổi điểm thưởng tích lũy */}
           <div className="discount-box-redeem-row">
             <span
               className={`redeem-toggle-text ${useLoyaltyPoints ? 'active' : ''}`}
               onClick={() => {
                 if (customer.isGuest) {
-                  showToast('Khách vãng lai không có điểm thưởng!', 'info');
+                  showToast('Khách vãng lai không có điểm thưởng tích lũy!', 'info');
                   return;
                 }
                 setUseLoyaltyPoints((prev) => !prev);
               }}
             >
-              Đổi điểm: 50 điểm = 5.000 đ · {useLoyaltyPoints ? 'Đã áp dụng' : 'Áp dụng'}
+              Đổi điểm: 50 điểm = 5.000 đ · {useLoyaltyPoints ? '✓ Đã trừ 5.000 đ' : 'Nhấp để áp dụng'}
             </span>
           </div>
         </div>
 
-        {/* Order Summary */}
+        {/* Khối tính tiền chi tiết */}
         <div className="cart-summary-section">
           <div className="summary-row">
-            <span className="summary-label">Tạm tính</span>
+            <span className="summary-label">Tạm tính ({totalItemsCount} món)</span>
             <span className="summary-val">{formatVND(subtotal)}</span>
           </div>
 
+          {appliedVoucher && voucherDiscount > 0 && (
+            <div className="summary-row">
+              <span className="summary-label">
+                Mã {appliedVoucher.maCode} ({appliedVoucher.loaiGiamGia === 'PhanTram' ? `${appliedVoucher.giaTriGiam}%` : 'Cố định'})
+              </span>
+              <span className="summary-val discount">
+                -{formatVND(voucherDiscount)}
+              </span>
+            </div>
+          )}
+
+          {useLoyaltyPoints && pointsDiscount > 0 && (
+            <div className="summary-row">
+              <span className="summary-label">Đổi điểm tích lũy</span>
+              <span className="summary-val discount">
+                -{formatVND(pointsDiscount)}
+              </span>
+            </div>
+          )}
+
           <div className="summary-row">
-            <span className="summary-label">Giảm giá</span>
+            <span className="summary-label">Tổng giảm giá</span>
             <span className="summary-val discount">
               {totalDiscount > 0 ? `-${formatVND(totalDiscount)}` : '0 đ'}
             </span>
@@ -742,7 +986,6 @@ export const PosScreen: React.FC = () => {
             <span className="total-amount">{formatVND(grandTotal)}</span>
           </div>
 
-          {/* Action Buttons */}
           <div className="cart-actions-row">
             <button
               type="button"
@@ -763,15 +1006,15 @@ export const PosScreen: React.FC = () => {
           </div>
 
           <div className="cart-loyalty-footer-note">
-            Đơn hoàn tất sẽ cộng 32 điểm cho khách.
+            Đơn hoàn tất sẽ tích lũy thêm điểm thưởng cho khách hàng.
           </div>
         </div>
       </aside>
 
-      {/* Toast Feedback Notification */}
+      {/* Toast thông báo phản hồi */}
       {toastMessage && (
         <div className={`pos-toast ${toastMessage.type}`} role="status">
-          <span>{toastMessage.type === 'success' ? '✓' : 'ℹ'}</span>
+          <span>{toastMessage.type === 'success' ? '✓' : toastMessage.type === 'error' ? '⚠' : 'ℹ'}</span>
           <span>{toastMessage.text}</span>
         </div>
       )}

@@ -157,5 +157,33 @@ public static class DbSeeder
         }
 
         await context.SaveChangesAsync();
+
+        // 5. Seed Mã giảm giá (Vouchers)
+        var sampleVouchers = new[]
+        {
+            new { MaCode = "QUATANG10", Ten = "Giảm giá 10% Quà Tặng", Loai = "PhanTram", GiaTri = 10m, DaysValid = 90 },
+            new { MaCode = "GIAM10K", Ten = "Giảm 10.000 đ đơn hàng", Loai = "SoTien", GiaTri = 10000m, DaysValid = 90 },
+            new { MaCode = "TRIAN50K", Ten = "Tri ân khách hàng giảm 50.000 đ", Loai = "SoTien", GiaTri = 50000m, DaysValid = 90 },
+            new { MaCode = "HETHAN", Ten = "Mã ưu đãi đã hết hạn", Loai = "PhanTram", GiaTri = 20m, DaysValid = -5 },
+        };
+
+        foreach (var v in sampleVouchers)
+        {
+            var existingVoucher = await context.MaGiamGias.FirstOrDefaultAsync(m => m.MaCode == v.MaCode);
+            if (existingVoucher == null)
+            {
+                context.MaGiamGias.Add(new MaGiamGia
+                {
+                    MaCode = v.MaCode,
+                    TenVoucher = v.Ten,
+                    LoaiGiamGia = v.Loai,
+                    GiaTriGiam = v.GiaTri,
+                    NgayBatDau = DateTime.UtcNow.AddDays(-30),
+                    NgayKetThuc = DateTime.UtcNow.AddDays(v.DaysValid)
+                });
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 }

@@ -165,5 +165,21 @@ SET tenSP = EXCLUDED.tenSP,
 
 
 -- ============================================================
+-- 10. MA GIAM GIA (VOUCHERS)
+-- ============================================================
+INSERT INTO MA_GIAM_GIA (maCode, tenVoucher, loaiGiamGia, giaTriGiam, ngayBatDau, ngayKetThuc)
+VALUES
+    ('QUATANG10', 'Giảm giá 10% Quà Tặng', 'PhanTram', 10.00, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP + INTERVAL '90 days'),
+    ('GIAM10K', 'Giảm 10.000 đ đơn hàng', 'SoTien', 10000.00, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP + INTERVAL '90 days'),
+    ('TRIAN50K', 'Tri ân khách hàng giảm 50.000 đ', 'SoTien', 50000.00, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP + INTERVAL '90 days'),
+    ('HETHAN', 'Mã ưu đãi đã hết hạn', 'PhanTram', 20.00, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP - INTERVAL '5 days')
+ON CONFLICT (maCode) DO UPDATE
+SET tenVoucher = EXCLUDED.tenVoucher,
+    loaiGiamGia = EXCLUDED.loaiGiamGia,
+    giaTriGiam = EXCLUDED.giaTriGiam,
+    ngayBatDau = EXCLUDED.ngayBatDau,
+    ngayKetThuc = EXCLUDED.ngayKetThuc;
+
+-- ============================================================
 -- KET THUC SEED DATA
 -- ============================================================
