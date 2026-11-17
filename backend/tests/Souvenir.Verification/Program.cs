@@ -8,6 +8,7 @@ using Souvenir.Application.Features.Users.Commands.CreateUser;
 using Souvenir.Application.Features.Users.Commands.DeleteUser;
 using Souvenir.Application.Features.Users.Commands.ToggleUserStatus;
 using Souvenir.Application.Features.Users.Commands.UpdateUser;
+using Souvenir.Application.Features.Discounts.Queries.CheckDiscount;
 using Souvenir.Application.Interfaces;
 using Souvenir.Domain.Constants;
 using Souvenir.Domain.Entities;
@@ -39,6 +40,12 @@ class Program
         await Test_DeleteLastActiveManager_Returns400();
         await Test_DemoteLastActiveManager_Returns400();
         await Test_MultipleManagers_AllowsActionOnFirst_BlocksActionOnLast();
+
+        Console.WriteLine("\n--- VERIFICATION SUITE FOR UC05 (VOUCHERS & DISCOUNT) ---");
+        await Test_CheckDiscount_QUATANG10_ValidPercentDiscount();
+        await Test_CheckDiscount_GIAM10K_ValidFixedAmountDiscount();
+        await Test_CheckDiscount_ExpiredVoucher_ReturnsError();
+        await Test_CheckDiscount_NonExistentVoucher_ReturnsError();
 
         Console.WriteLine("\n===============================================================");
         Console.WriteLine($"   TEST RESULTS: {_passedTests} PASSED, {_failedTests} FAILED");
@@ -325,6 +332,94 @@ class Program
             "Multiple Managers: Can lock 1st manager (200 OK), but subsequent lock on last active manager is blocked (400 Bad Request)",
             firstLockPassed && secondLockBlocked,
             $"FirstLock status: {result1.StatusCode}, SecondLock status: {result2.StatusCode}"
+        );
+    }
+
+    private static async Task Test_CheckDiscount_QUATANG10_ValidPercentDiscount()
+    {
+        using var context = CreateInMemoryDbContext();
+        context.MaGiamGias.Add(new MaGiamGia
+        {
+            Id = 1,
+            MaCode = "QUATANG10",
+            TenVoucher = "Voucher quà tặng 10%",
+            LoaiGiamGia = "PhanTram",
+            GiaTriGiam = 10,
+            NgayBatDau = DateTime.UtcNow.AddDays(-10),
+            NgayKetThuc = DateTime.UtcNow.AddDays(30)
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new CheckDiscountQueryHandler(context);
+        var res = await handler.Handle(new CheckDiscountQuery("quatang10", 200000m), CancellationToken.None);
+
+        AssertTest(
+            "UC05: Voucher QUATANG10 applies 10% discount on 200.000d -> 20.000d discount, 180.000d total",
+            res.HopLe && res.SoTienGiam == 20000m && res.ThanhTienSauGiam == 180000m,
+            $"HopLe: {res.HopLe}, SoTienGiam: {res.SoTienGiam}, ThanhTienSauGiam: {res.ThanhTienSauGiam}"
+        );
+    }
+
+    private static async Task Test_CheckDiscount_GIAM10K_ValidFixedAmountDiscount()
+    {
+        using var context = CreateInMemoryDbContext();
+        context.MaGiamGias.Add(new MaGiamGia
+        {
+            Id = 2,
+            MaCode = "GIAM10K",
+            TenVoucher = "Giảm 10.000 đ",
+            LoaiGiamGia = "SoTien",
+            GiaTriGiam = 10000,
+            NgayBatDau = DateTime.UtcNow.AddDays(-10),
+            NgayKetThuc = DateTime.UtcNow.AddDays(30)
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new CheckDiscountQueryHandler(context);
+        var res = await handler.Handle(new CheckDiscountQuery("GIAM10K", 50000m), CancellationToken.None);
+
+        AssertTest(
+            "UC05: Voucher GIAM10K applies 10.000d fixed discount on 50.000d -> 10.000d discount, 40.000d total",
+            res.HopLe && res.SoTienGiam == 10000m && res.ThanhTienSauGiam == 40000m,
+            $"HopLe: {res.HopLe}, SoTienGiam: {res.SoTienGiam}, ThanhTienSauGiam: {res.ThanhTienSauGiam}"
+        );
+    }
+
+    private static async Task Test_CheckDiscount_ExpiredVoucher_ReturnsError()
+    {
+        using var context = CreateInMemoryDbContext();
+        context.MaGiamGias.Add(new MaGiamGia
+        {
+            Id = 3,
+            MaCode = "HETHAN",
+            TenVoucher = "Mã hết hạn",
+            LoaiGiamGia = "PhanTram",
+            GiaTriGiam = 20,
+            NgayBatDau = DateTime.UtcNow.AddDays(-20),
+            NgayKetThuc = DateTime.UtcNow.AddDays(-1)
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new CheckDiscountQueryHandler(context);
+        var res = await handler.Handle(new CheckDiscountQuery("HETHAN", 100000m), CancellationToken.None);
+
+        AssertTest(
+            "UC05: Expired voucher returns HopLe = false and preserves order total",
+            !res.HopLe && res.SoTienGiam == 0 && res.ThanhTienSauGiam == 100000m,
+            $"HopLe: {res.HopLe}, ThongBao: {res.ThongBao}"
+        );
+    }
+
+    private static async Task Test_CheckDiscount_NonExistentVoucher_ReturnsError()
+    {
+        using var context = CreateInMemoryDbContext();
+        var handler = new CheckDiscountQueryHandler(context);
+        var res = await handler.Handle(new CheckDiscountQuery("KHONGCO", 150000m), CancellationToken.None);
+
+        AssertTest(
+            "UC05: Non-existent voucher returns HopLe = false",
+            !res.HopLe && res.SoTienGiam == 0,
+            $"HopLe: {res.HopLe}, ThongBao: {res.ThongBao}"
         );
     }
 }

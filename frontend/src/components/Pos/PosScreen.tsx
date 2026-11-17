@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context';
 import { getProducts } from '../../api/products';
@@ -120,10 +120,9 @@ export const PosScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Cart State (Initialized with Figma Screen 02 sample products)
+  // Cart State (Initialized empty)
   const [cart, setCart] = useState<CartItem[]>([]);
   const [draftCount, setDraftCount] = useState(3);
-  const initializedDemoCartRef = useRef(false);
 
   // Customer State
   const [customer, setCustomer] = useState<Customer>(DEFAULT_CUSTOMER);
@@ -131,11 +130,8 @@ export const PosScreen: React.FC = () => {
   const [customerPhoneInput, setCustomerPhoneInput] = useState('0901 234 567');
 
   // Discount & Promotion State
-  const [appliedVoucher] = useState<{ code: string; discountPercent: number } | null>({
-    code: 'QUATANG10',
-    discountPercent: 10,
-  });
-  const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(true);
+  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discountPercent: number } | null>(null);
+  const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
 
   // Toast Feedback State
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
@@ -165,19 +161,6 @@ export const PosScreen: React.FC = () => {
         if (!ignore) {
           setProducts(data);
           setIsLoading(false);
-
-          // Populate initial Figma Screen 02 demo items on first load
-          if (!initializedDemoCartRef.current && data.length > 0) {
-            initializedDemoCartRef.current = true;
-            const teddy = data.find((p) => p.maSP === 'GB001');
-            const lysu = data.find((p) => p.maSP === 'LY002');
-            const demoItems: CartItem[] = [];
-            if (teddy) demoItems.push({ product: teddy, quantity: 1 });
-            if (lysu) demoItems.push({ product: lysu, quantity: 2 });
-            if (demoItems.length > 0) {
-              setCart(demoItems);
-            }
-          }
         }
       })
       .catch(() => {
@@ -311,6 +294,8 @@ export const PosScreen: React.FC = () => {
     }
     setDraftCount((prev) => prev + 1);
     setCart([]);
+    setAppliedVoucher(null);
+    setUseLoyaltyPoints(false);
     showToast(`Đã lưu đơn nháp #${draftCount + 1} thành công!`);
   };
 
@@ -321,6 +306,8 @@ export const PosScreen: React.FC = () => {
     }
     showToast(`Thanh toán thành công ${formatVND(grandTotal)} cho đơn hàng!`);
     setCart([]);
+    setAppliedVoucher(null);
+    setUseLoyaltyPoints(false);
   };
 
   const handleLogout = () => {

@@ -16,6 +16,7 @@ public class AppDbContext : DbContext, IApplicationDbContext
     public DbSet<SanPham> SanPhams => Set<SanPham>();
     public DbSet<DanhMucSanPham> DanhMucSanPhams => Set<DanhMucSanPham>();
     public DbSet<DonViTinh> DonViTinhs => Set<DonViTinh>();
+    public DbSet<MaGiamGia> MaGiamGias => Set<MaGiamGia>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +101,19 @@ public class AppDbContext : DbContext, IApplicationDbContext
                 .WithMany(d => d.SanPhams)
                 .HasForeignKey(e => e.DonViTinhId)
                 .HasConstraintName("fk_sanpham_donvitinh");
+        });
+
+        modelBuilder.Entity<MaGiamGia>(entity =>
+        {
+            entity.ToTable("ma_giam_gia");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.MaCode).HasColumnName("macode").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.TenVoucher).HasColumnName("tenvoucher").HasMaxLength(150).IsRequired();
+            entity.Property(e => e.LoaiGiamGia).HasColumnName("loaigiamgia").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.GiaTriGiam).HasColumnName("giatrigiam").HasColumnType("numeric(18,2)").IsRequired();
+            entity.Property(e => e.NgayBatDau).HasColumnName("ngaybatdau").IsRequired();
+            entity.Property(e => e.NgayKetThuc).HasColumnName("ngayketthuc").IsRequired();
         });
     }
 }
