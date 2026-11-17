@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Souvenir.Application.Interfaces;
 using Souvenir.Domain.Entities;
 using Souvenir.Infrastructure.Data.Configurations;
+using Souvenir.Infrastructure.Persistence.Configurations;
 
 namespace Souvenir.Infrastructure.Data;
 
@@ -22,6 +23,8 @@ public class AppDbContext : DbContext, IApplicationDbContext
     public DbSet<HinhThucThanhToan> HinhThucThanhToans => Set<HinhThucThanhToan>();
     public DbSet<DonHang> DonHangs => Set<DonHang>();
     public DbSet<ChiTietDonHang> ChiTietDonHangs => Set<ChiTietDonHang>();
+    public DbSet<CaLamViec> CaLamViecs => Set<CaLamViec>();
+    public DbSet<ChamCong> ChamCongs => Set<ChamCong>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -31,6 +34,8 @@ public class AppDbContext : DbContext, IApplicationDbContext
         modelBuilder.ApplyConfiguration(new HinhThucThanhToanConfiguration());
         modelBuilder.ApplyConfiguration(new DonHangConfiguration());
         modelBuilder.ApplyConfiguration(new ChiTietDonHangConfiguration());
+        modelBuilder.ApplyConfiguration(new CaLamViecConfiguration());
+        modelBuilder.ApplyConfiguration(new ChamCongConfiguration());
 
         modelBuilder.Entity<VaiTro>(entity =>
         {

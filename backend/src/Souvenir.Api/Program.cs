@@ -6,13 +6,14 @@ using Souvenir.Application;
 using Souvenir.Application.Interfaces;
 using Souvenir.Infrastructure;
 using Souvenir.Infrastructure.Data;
+using Souvenir.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add Application & Infrastructure services
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-
+builder.Services.AddScoped<IShiftService, ShiftService>();
 // Add Controllers & OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi(options =>
