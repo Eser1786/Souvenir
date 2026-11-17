@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context';
 import { getProducts } from '../../api/products';
 import type { Product } from '../../api/products';
+import { findCustomerByPhone } from '../../api/customers';
 import './PosScreen.css';
 
 interface CartItem {
@@ -261,18 +262,28 @@ export const PosScreen: React.FC = () => {
   };
 
   // Customer handlers
-  const handleCustomerSearch = (e: React.FormEvent) => {
+  const handleCustomerSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerPhoneInput.trim()) return;
+    const cleanDigits = customerPhoneInput.replace(/\D/g, '');
+    if (!cleanDigits) return;
 
-    setCustomer({
-      hoTen: 'Trần Văn Hoàng (VIP)',
-      soDienThoai: customerPhoneInput.trim(),
-      diemThuong: 320,
-      isGuest: false,
-    });
-    setIsSearchingCustomer(false);
-    showToast('Đã cập nhật khách hàng thành viên!');
+    try {
+      const found = await findCustomerByPhone(cleanDigits);
+      if (found) {
+        setCustomer({
+          hoTen: found.tenKhachHang,
+          soDienThoai: found.soDienThoai,
+          diemThuong: found.diemTichLuy,
+          isGuest: false,
+        });
+        setIsSearchingCustomer(false);
+        showToast(`Tìm thấy khách hàng: ${found.tenKhachHang} (⭐ ${found.diemTichLuy} điểm)`);
+      } else {
+        showToast(`Chưa có hồ sơ cho SĐT ${customerPhoneInput}. Bạn có thể tạo mới trong trang Khách hàng.`, 'info');
+      }
+    } catch {
+      showToast('Có lỗi khi tra cứu thông tin khách hàng.', 'info');
+    }
   };
 
   // Financial calculations matching Figma Screen 02
@@ -380,7 +391,7 @@ export const PosScreen: React.FC = () => {
             <button
               type="button"
               className="nav-item"
-              onClick={() => showToast('Mở danh sách Khách hàng...', 'info')}
+              onClick={() => navigate('/customers')}
             >
               <span className="nav-icon"><IconCustomer /></span>
               <span>Khách hàng</span>
@@ -614,13 +625,23 @@ export const PosScreen: React.FC = () => {
 
               <div className="customer-meta-row">
                 <span className="customer-name">{customer.hoTen}</span>
-                <button
-                  type="button"
-                  className="customer-action-link"
-                  onClick={() => setIsSearchingCustomer(true)}
-                >
-                  Đổi khách
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="customer-action-link"
+                    onClick={() => setIsSearchingCustomer(true)}
+                  >
+                    Tìm SĐT
+                  </button>
+                  <button
+                    type="button"
+                    className="customer-action-link"
+                    onClick={() => navigate('/customers')}
+                    title="Mở màn hình Quản lý khách hàng"
+                  >
+                    Hồ sơ
+                  </button>
+                </div>
               </div>
 
               <div className="customer-meta-row">

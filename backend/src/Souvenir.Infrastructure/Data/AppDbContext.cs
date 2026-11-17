@@ -16,6 +16,7 @@ public class AppDbContext : DbContext, IApplicationDbContext
     public DbSet<SanPham> SanPhams => Set<SanPham>();
     public DbSet<DanhMucSanPham> DanhMucSanPhams => Set<DanhMucSanPham>();
     public DbSet<DonViTinh> DonViTinhs => Set<DonViTinh>();
+    public DbSet<KhachHang> KhachHangs => Set<KhachHang>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +101,17 @@ public class AppDbContext : DbContext, IApplicationDbContext
                 .WithMany(d => d.SanPhams)
                 .HasForeignKey(e => e.DonViTinhId)
                 .HasConstraintName("fk_sanpham_donvitinh");
+        });
+
+        modelBuilder.Entity<KhachHang>(entity =>
+        {
+            entity.ToTable("khach_hang");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.SoDienThoai).HasColumnName("sodienthoai").HasMaxLength(10).IsRequired();
+            entity.HasIndex(e => e.SoDienThoai).IsUnique();
+            entity.Property(e => e.TenKhachHang).HasColumnName("tenkhachhang").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.DiemTichLuy).HasColumnName("diemtichluy").HasDefaultValue(0).IsRequired();
         });
     }
 }
