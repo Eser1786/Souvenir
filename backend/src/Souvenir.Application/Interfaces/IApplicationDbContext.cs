@@ -12,6 +12,7 @@ public interface IApplicationDbContext
     DbSet<SanPham> SanPhams { get; }
     DbSet<DanhMucSanPham> DanhMucSanPhams { get; }
     DbSet<DonViTinh> DonViTinhs { get; }
+    DbSet<KhachHang> KhachHangs { get; }
     DbSet<MaGiamGia> MaGiamGias { get; }
     DbSet<HinhThucThanhToan> HinhThucThanhToans { get; }
     DbSet<DonHang> DonHangs { get; }
