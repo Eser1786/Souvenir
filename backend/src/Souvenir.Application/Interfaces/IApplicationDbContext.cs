@@ -19,6 +19,8 @@ public interface IApplicationDbContext
     DbSet<ChiTietDonHang> ChiTietDonHangs { get; }
     DbSet<CaLamViec> CaLamViecs { get; }
     DbSet<ChamCong> ChamCongs { get; }
+    DbSet<PhieuTraHang> PhieuTraHangs { get; }
+    DbSet<ChiTietTraHang> ChiTietTraHangs { get; }
 
     /// <summary>Dùng để mở transaction (UC07 tạo đơn + trừ kho).</summary>
     DatabaseFacade Database { get; }

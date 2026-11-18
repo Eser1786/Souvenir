@@ -621,6 +621,14 @@ export const PosScreen: React.FC = () => {
                 <button
                   type="button"
                   className="nav-item"
+                  onClick={() => navigate('/returns')}
+                >
+                  <span className="nav-icon"><IconDraft /></span>
+                  <span>Trả hàng / Hoàn tiền</span>
+                </button>
+                <button
+                  type="button"
+                  className="nav-item"
                   onClick={() => navigate('/users')}
                 >
                   <span className="nav-icon"><IconStaff /></span>

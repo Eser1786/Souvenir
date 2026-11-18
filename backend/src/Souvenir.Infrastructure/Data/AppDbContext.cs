@@ -25,6 +25,8 @@ public class AppDbContext : DbContext, IApplicationDbContext
     public DbSet<ChiTietDonHang> ChiTietDonHangs => Set<ChiTietDonHang>();
     public DbSet<CaLamViec> CaLamViecs => Set<CaLamViec>();
     public DbSet<ChamCong> ChamCongs => Set<ChamCong>();
+    public DbSet<PhieuTraHang> PhieuTraHangs => Set<PhieuTraHang>();
+    public DbSet<ChiTietTraHang> ChiTietTraHangs => Set<ChiTietTraHang>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,6 +38,10 @@ public class AppDbContext : DbContext, IApplicationDbContext
         modelBuilder.ApplyConfiguration(new ChiTietDonHangConfiguration());
         modelBuilder.ApplyConfiguration(new CaLamViecConfiguration());
         modelBuilder.ApplyConfiguration(new ChamCongConfiguration());
+
+        // UC08 - Trả hàng / Hoàn tiền
+        modelBuilder.ApplyConfiguration(new PhieuTraHangConfiguration());
+        modelBuilder.ApplyConfiguration(new ChiTietTraHangConfiguration());
 
         modelBuilder.Entity<VaiTro>(entity =>
         {
