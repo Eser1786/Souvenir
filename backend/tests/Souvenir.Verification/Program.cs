@@ -9,6 +9,10 @@ using Souvenir.Application.Features.Users.Commands.DeleteUser;
 using Souvenir.Application.Features.Users.Commands.ToggleUserStatus;
 using Souvenir.Application.Features.Users.Commands.UpdateUser;
 using Souvenir.Application.Features.Discounts.Queries.CheckDiscount;
+using Souvenir.Application.DTOs.Orders;
+using Souvenir.Application.Features.DraftOrders.Commands.CreateDraftOrder;
+using Souvenir.Application.Features.DraftOrders.Commands.DeleteDraftOrder;
+using Souvenir.Application.Features.DraftOrders.Queries.GetDraftOrders;
 using Souvenir.Application.Interfaces;
 using Souvenir.Domain.Constants;
 using Souvenir.Domain.Entities;
@@ -20,6 +24,12 @@ class FastPasswordHasher : IPasswordHasher
 {
     public string HashPassword(string password) => $"hash_{password}";
     public bool VerifyPassword(string password, string passwordHash) => passwordHash == $"hash_{password}";
+}
+
+class MockCaLamViecLookup : ICaLamViecLookup
+{
+    public Task<int?> GetOpenShiftIdAsync(int nguoiDungId, CancellationToken cancellationToken = default) => Task.FromResult<int?>(1);
+    public Task<bool> IsShiftOpenAsync(int caLamViecId, CancellationToken cancellationToken = default) => Task.FromResult(true);
 }
 
 class Program
@@ -46,6 +56,11 @@ class Program
         await Test_CheckDiscount_GIAM10K_ValidFixedAmountDiscount();
         await Test_CheckDiscount_ExpiredVoucher_ReturnsError();
         await Test_CheckDiscount_NonExistentVoucher_ReturnsError();
+
+        Console.WriteLine("\n--- VERIFICATION SUITE FOR UC06 (DRAFT ORDERS / LƯU NHÁP) ---");
+        await Test_CreateDraftOrder_Success_DoesNotDeductStock();
+        await Test_GetDraftOrders_ReturnsDraftOrdersOnly();
+        await Test_DeleteDraftOrder_RemovesOrderAndDetails();
 
         Console.WriteLine("\n===============================================================");
         Console.WriteLine($"   TEST RESULTS: {_passedTests} PASSED, {_failedTests} FAILED");
@@ -420,6 +435,71 @@ class Program
             "UC05: Non-existent voucher returns HopLe = false",
             !res.HopLe && res.SoTienGiam == 0,
             $"HopLe: {res.HopLe}, ThongBao: {res.ThongBao}"
+        );
+    }
+
+    private static async Task Test_CreateDraftOrder_Success_DoesNotDeductStock()
+    {
+        using var context = CreateInMemoryDbContext();
+        context.SanPhams.Add(new SanPham { Id = 1, MaSP = "SP01", TenSP = "Gấu bông", GiaBan = 100000m, SoLuongTon = 50, TrangThai = "KinhDoanh" });
+        context.HinhThucThanhToans.Add(new HinhThucThanhToan { Id = 1, TenHinhThuc = "Tiền mặt", TrangThai = "HoatDong" });
+        context.NguoiDungs.Add(new NguoiDung { Id = 1, TenDangNhap = "cashier1", HoTen = "Thu Ngân 1", MatKhau = "hash", SoDienThoai = "0900000001", TrangThai = "HoatDong", VaiTroId = 1 });
+        await context.SaveChangesAsync();
+
+        var handler = new CreateDraftOrderCommandHandler(context, new MockCaLamViecLookup());
+        var req = new CreateDraftOrderRequest
+        {
+            Items = new List<CreateDraftOrderItemRequest> { new() { SanPhamId = 1, SoLuong = 5 } }
+        };
+
+        var result = await handler.Handle(new CreateDraftOrderCommand(1, req), CancellationToken.None);
+        var product = await context.SanPhams.FindAsync(1);
+
+        AssertTest(
+            "UC06: Saving draft order succeeds and DOES NOT deduct stock",
+            result.IsSuccess && result.Data != null && result.Data.TrangThai == TrangThaiDonHang.LuuNhap && product?.SoLuongTon == 50,
+            $"IsSuccess: {result.IsSuccess}, Stock remaining: {product?.SoLuongTon} (expected 50)"
+        );
+    }
+
+    private static async Task Test_GetDraftOrders_ReturnsDraftOrdersOnly()
+    {
+        using var context = CreateInMemoryDbContext();
+        context.SanPhams.Add(new SanPham { Id = 1, MaSP = "SP01", TenSP = "Gấu bông", GiaBan = 100000m, SoLuongTon = 50 });
+        context.HinhThucThanhToans.Add(new HinhThucThanhToan { Id = 1, TenHinhThuc = "Tiền mặt", TrangThai = "HoatDong" });
+        context.NguoiDungs.Add(new NguoiDung { Id = 1, TenDangNhap = "cashier1", HoTen = "Thu Ngân 1", MatKhau = "hash", SoDienThoai = "0900000001", TrangThai = "HoatDong", VaiTroId = 1 });
+
+        context.DonHangs.Add(new DonHang { Id = 101, TrangThai = TrangThaiDonHang.LuuNhap, NguoiDungId = 1, CaLamViecId = 1, HinhThucThanhToanId = 1, NgayTao = DateTime.UtcNow, TongTienThanhToan = 100000m });
+        context.DonHangs.Add(new DonHang { Id = 102, TrangThai = TrangThaiDonHang.DaThanhToan, NguoiDungId = 1, CaLamViecId = 1, HinhThucThanhToanId = 1, NgayTao = DateTime.UtcNow, TongTienThanhToan = 200000m });
+        await context.SaveChangesAsync();
+
+        var handler = new GetDraftOrdersQueryHandler(context);
+        var list = await handler.Handle(new GetDraftOrdersQuery(), CancellationToken.None);
+
+        AssertTest(
+            "UC06: GetDraftOrders returns only orders with TrangThai = LuuNhap",
+            list.Count == 1 && list[0].Id == 101,
+            $"Returned count: {list.Count}, first order ID: {(list.Count > 0 ? list[0].Id : 0)}"
+        );
+    }
+
+    private static async Task Test_DeleteDraftOrder_RemovesOrderAndDetails()
+    {
+        using var context = CreateInMemoryDbContext();
+        context.DonHangs.Add(new DonHang { Id = 201, TrangThai = TrangThaiDonHang.LuuNhap, NguoiDungId = 1, CaLamViecId = 1, HinhThucThanhToanId = 1, NgayTao = DateTime.UtcNow, TongTienThanhToan = 100000m });
+        context.ChiTietDonHangs.Add(new ChiTietDonHang { DonHangId = 201, SanPhamId = 1, SoLuong = 2, DonGia = 50000m, ThanhTien = 100000m });
+        await context.SaveChangesAsync();
+
+        var handler = new DeleteDraftOrderCommandHandler(context);
+        var res = await handler.Handle(new DeleteDraftOrderCommand(201), CancellationToken.None);
+
+        var orderAfter = await context.DonHangs.FindAsync(201);
+        var detailsAfter = await context.ChiTietDonHangs.Where(c => c.DonHangId == 201).ToListAsync();
+
+        AssertTest(
+            "UC06: DeleteDraftOrder removes both DonHang and ChiTietDonHang records",
+            res.IsSuccess && orderAfter == null && detailsAfter.Count == 0,
+            $"IsSuccess: {res.IsSuccess}, Order exists: {orderAfter != null}, Details count: {detailsAfter.Count}"
         );
     }
 }

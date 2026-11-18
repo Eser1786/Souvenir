@@ -44,6 +44,6 @@
 ### 🎯 TIÊU CHÍ HOÀN THÀNH ĐỢT 2 (DEFINITION OF DONE)
 * [ ] Thu ngân bấm [Thanh toán] $\rightarrow$ Chọn tiền mặt hoặc QR $\rightarrow$ Bấm xác nhận $\rightarrow$ Tạo đơn thành công và số tồn kho của sản phẩm bị trừ ngay lập tức.
 * [ ] Khách hàng sau khi mua đơn được tự động cộng điểm thưởng.
-* [ ] Có thể lưu nháp đơn hàng và khôi phục lại giỏ hàng.
+* [x] Có thể lưu nháp đơn hàng và khôi phục lại giỏ hàng. (Đã hoàn thành bởi Tâm - UC06)
 * [ ] Tìm lại đơn hàng cũ và bấm Trả hàng thành công (tồn kho được cộng lại).
 * [ ] Thu ngân bấm Chốt ca, hệ thống tính chuẩn doanh thu tiền mặt trong ca.

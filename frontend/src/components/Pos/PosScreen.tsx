@@ -9,6 +9,14 @@ import { findCustomerByPhone } from '../../api/customers';
 import { OpenShiftModal } from '../Shifts/OpenShiftModal';
 import { CloseShiftModal } from '../Shifts/CloseShiftModal';
 import { AttendanceModal } from '../Shifts/AttendanceModal';
+import { DraftOrdersModal } from './DraftOrdersModal';
+import {
+  getDraftOrders,
+  createDraftOrder,
+  deleteDraftOrder,
+  type DraftOrderDto,
+  type CreateDraftOrderRequest,
+} from '../../api/draftOrders';
 import './PosScreen.css';
 import { shiftApi, type ShiftInfo } from '../../api/shiftApi';
 
@@ -158,7 +166,28 @@ export const PosScreen: React.FC = () => {
 
   // Cart State (UC04)
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [draftCount, setDraftCount] = useState(3);
+
+  // Draft Orders State (UC06 - Lưu nháp đơn)
+  const [draftOrders, setDraftOrders] = useState<DraftOrderDto[]>([]);
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
+  const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+
+  const fetchDrafts = async () => {
+    try {
+      setIsLoadingDrafts(true);
+      const data = await getDraftOrders();
+      setDraftOrders(data);
+    } catch {
+      // silent
+    } finally {
+      setIsLoadingDrafts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDrafts();
+  }, []);
 
   // Customer State
   const [defaultCustomer, setDefaultCustomer] = useState<Customer>(DEFAULT_CUSTOMER);
@@ -457,17 +486,111 @@ export const PosScreen: React.FC = () => {
     }
   };
 
-  const handleSaveDraft = () => {
+  // UC06: Lưu nháp đơn hàng
+  const handleSaveDraft = async () => {
     if (cart.length === 0) {
       showToast('Giỏ hàng trống, không thể lưu nháp!', 'info');
       return;
     }
-    setDraftCount((prev) => prev + 1);
-    setCart([]);
-    setAppliedVoucher(null);
-    setVoucherInput('');
-    setUseLoyaltyPoints(false);
-    showToast(`Đã lưu đơn nháp #${draftCount + 1} thành công!`);
+    try {
+      setIsSavingDraft(true);
+      const req: CreateDraftOrderRequest = {
+        items: cart.map((c) => ({ sanPhamId: c.product.id, soLuong: c.quantity })),
+        khachHangId: customer.isGuest ? null : customer.id,
+        maGiamGia: appliedVoucher ? appliedVoucher.maCode : undefined,
+        diemSuDung: useLoyaltyPoints ? 50 : 0,
+        caLamViecId: currentShift?.id,
+      };
+      const created = await createDraftOrder(req);
+      setCart([]);
+      setAppliedVoucher(null);
+      setVoucherInput('');
+      setUseLoyaltyPoints(false);
+      await fetchDrafts();
+      showToast(`Đã lưu đơn nháp #${created.maDonHang || `NHAP-${created.id}`} thành công!`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Có lỗi khi lưu đơn nháp!';
+      showToast(msg, 'error');
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  // UC06: Khôi phục đơn nháp lên giỏ hàng
+  const handleRestoreDraft = async (draft: DraftOrderDto) => {
+    if (cart.length > 0) {
+      const confirmRestore = window.confirm(
+        'Giỏ hàng hiện tại đang có sản phẩm. Bạn có muốn thay thế giỏ hàng bằng đơn nháp này không?'
+      );
+      if (!confirmRestore) return;
+    }
+
+    const restoredCart: CartItem[] = draft.items.map((item) => {
+      const p: Product = products.find((x) => x.id === item.sanPhamId) ?? {
+        id: item.sanPhamId,
+        maSP: item.maSP,
+        tenSP: item.tenSP,
+        tenDanhMuc: 'Sản phẩm',
+        giaBan: item.donGia,
+        soLuongTon: item.soLuongTon,
+        hinhAnh: item.imageUrl || undefined,
+      };
+      return { product: p, quantity: item.soLuong };
+    });
+
+    setCart(restoredCart);
+
+    if (draft.khachHangId && draft.tenKhachHang) {
+      setCustomer({
+        id: draft.khachHangId,
+        hoTen: draft.tenKhachHang,
+        soDienThoai: draft.soDienThoaiKhach || '',
+        diemThuong: 0,
+        isGuest: false,
+      });
+    }
+
+    if (draft.maGiamGia) {
+      setVoucherInput(draft.maGiamGia);
+      try {
+        const res = await checkDiscount({ maCode: draft.maGiamGia, tongTienHang: draft.tongTienHang });
+        if (res.hopLe) {
+          setAppliedVoucher(res);
+        }
+      } catch {
+        // silent
+      }
+    } else {
+      setAppliedVoucher(null);
+      setVoucherInput('');
+    }
+
+    setUseLoyaltyPoints(draft.diemSuDung > 0);
+
+    try {
+      await deleteDraftOrder(draft.id);
+      await fetchDrafts();
+    } catch {
+      // silent
+    }
+
+    setIsDraftModalOpen(false);
+    showToast(`Đã khôi phục đơn nháp #${draft.maDonHang || draft.id} vào giỏ hàng!`);
+  };
+
+  // UC06: Xóa đơn nháp
+  const handleDeleteDraft = async (draftId: number) => {
+    const confirmDel = window.confirm('Bạn có chắc chắn muốn xóa đơn nháp này?');
+    if (!confirmDel) return;
+
+    try {
+      await deleteDraftOrder(draftId);
+      await fetchDrafts();
+      showToast('Đã xóa đơn nháp thành công!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Không thể xóa đơn nháp!';
+      showToast(msg, 'error');
+    }
   };
 
   // UC07: mở Modal thanh toán (components/Payment/PaymentModal.tsx - Người 3)
@@ -563,10 +686,10 @@ export const PosScreen: React.FC = () => {
             <button
               type="button"
               className="nav-item"
-              onClick={() => showToast(`Có ${draftCount} đơn hàng đang lưu nháp.`, 'info')}
+              onClick={() => setIsDraftModalOpen(true)}
             >
               <span className="nav-icon"><IconDraft /></span>
-              <span>Đơn nháp ({draftCount})</span>
+              <span>Đơn nháp ({draftOrders.length})</span>
             </button>
             <button
               type="button"
@@ -678,9 +801,9 @@ export const PosScreen: React.FC = () => {
               <button
                 type="button"
                 className="btn-draft-top"
-                onClick={() => showToast(`Danh sách ${draftCount} đơn nháp sẵn sàng.`, 'info')}
+                onClick={() => setIsDraftModalOpen(true)}
               >
-                Đơn nháp ({draftCount})
+                Đơn nháp ({draftOrders.length})
               </button>
               <button
                 type="button"
@@ -1104,10 +1227,10 @@ export const PosScreen: React.FC = () => {
             <button
               type="button"
               className="btn-cart-draft"
-              disabled={cart.length === 0}
+              disabled={cart.length === 0 || isSavingDraft}
               onClick={handleSaveDraft}
             >
-              Lưu nháp đơn
+              {isSavingDraft ? 'Đang lưu...' : 'Lưu nháp đơn'}
             </button>
             <button
               type="button"
@@ -1178,6 +1301,15 @@ export const PosScreen: React.FC = () => {
           fetchCurrentShift();
           showToast('Đã cập nhật trạng thái chấm công!');
         }}
+      />
+
+      <DraftOrdersModal
+        isOpen={isDraftModalOpen}
+        onClose={() => setIsDraftModalOpen(false)}
+        drafts={draftOrders}
+        isLoading={isLoadingDrafts}
+        onRestore={handleRestoreDraft}
+        onDelete={handleDeleteDraft}
       />
 
       {/* Toast thông báo phản hồi */}

@@ -17,7 +17,7 @@ Nhóm đã hoàn thành xuất sắc giai đoạn **Đào móng** (Base Clean Ar
 | **UC04** | **Tạo đơn hàng (POS)** | 🔴 0% | 🟡 80% | **Đã có giao diện POS 3 cột**: Giỏ hàng, chọn món, đổi số lượng, tạm tính. *Chưa có BE lưu đơn*. |
 | **UC11** | **Quản lý sản phẩm (CRUD)** | 🟡 50% | 🟡 50% | **Xong phần Đọc**: Entity `SanPham`, seed data, API `GET /api/products`, lưới ảnh. *Chưa có Thêm/Sửa/Xóa*. |
 | **UC05** | **Áp dụng giảm giá** | 🔴 0% | 🟡 50% | Đã có ô nhập voucher & tính % trừ tiền trên UI POS. *Chưa có Entity/API `MaGiamGia`*. |
-| **UC06** | **Lưu nháp đơn** | 🔴 0% | 🟡 40% | Đã có nút "Lưu nháp đơn" & badge "Đơn nháp (3)". *Chưa có API lưu nháp*. |
+| **UC06** | **Lưu nháp đơn** | 🟢 100% | 🟢 100% | **Xong 100%**: API POST/GET/DELETE /api/draft-orders, Modal danh sách đơn tạm và khôi phục lên giỏ hàng. |
 | **UC07** | **Thanh toán** | 🔴 0% | 🟡 25% | Đã có nút [Thanh toán], tính tổng tiền. *Chưa có popup Tiền mặt/QR và API trừ kho*. |
 | **UC09** | **Quản lý hồ sơ khách hàng** | 🔴 0% | 🟡 20% | Đã có ô hiển thị SĐT, tên khách trên giỏ hàng POS. *Chưa có trang CRUD quản lý khách*. |
 | **UC10** | **Tích điểm / Đổi điểm** | 🔴 0% | 🟡 30% | Đã có nút Đổi điểm (50 điểm = 5.000đ). *Chưa có logic lưu điểm vào DB*. |
@@ -66,13 +66,13 @@ Mỗi thành viên tự làm trọn vẹn cả **Backend API** và **Giao diện
 * **Use Case sở hữu**: **UC04 (Tạo đơn hàng)** + **UC05 (Giảm giá)** + **UC06 (Lưu nháp đơn)**
 * **Kế thừa**: File [PosScreen.tsx](file:///e:/Hoc%20Tap/OOAD/Souvenir/frontend/src/components/Pos/PosScreen.tsx) đã có sẵn.
 * **Backend Checklist**:
-  - [ ] Tạo Entity `MaGiamGia` (`Id`, `MaCode`, `TenVoucher`, `LoaiGiamGia`, `GiaTriGiam`, `NgayBatDau`, `NgayKetThuc`).
-  - [ ] Viết API `POST /api/discounts/check`: Kiểm tra mã voucher hợp lệ, còn hạn và trả về số tiền/% giảm giá.
-  - [ ] Viết API Đơn nháp: `POST /api/draft-orders` (Lưu đơn tạm), `GET /api/draft-orders` (Lấy danh sách đơn nháp), `DELETE /api/draft-orders/{id}`.
+  - [x] Tạo Entity `MaGiamGia` (`Id`, `MaCode`, `TenVoucher`, `LoaiGiamGia`, `GiaTriGiam`, `NgayBatDau`, `NgayKetThuc`).
+  - [x] Viết API `POST /api/discounts/check`: Kiểm tra mã voucher hợp lệ, còn hạn và trả về số tiền/% giảm giá.
+  - [x] Viết API Đơn nháp: `POST /api/draft-orders` (Lưu đơn tạm), `GET /api/draft-orders` (Lấy danh sách đơn nháp), `DELETE /api/draft-orders/{id}`.
 * **Frontend Checklist**:
-  - [ ] Gắn sự kiện ô nhập Voucher trên `PosScreen.tsx`: Gọi API kiểm tra mã, cập nhật tiền giảm vào giỏ.
-  - [ ] Hoàn thiện nút **[Lưu nháp đơn]**: Gọi API lưu giỏ hàng hiện tại vào danh sách nháp và làm sạch giỏ.
-  - [ ] Hoàn thiện nút **[Đơn nháp (3)]**: Bấm vào mở modal hiển thị các đơn đang lưu tạm; bấm "Khôi phục" thì nạp lại vào giỏ hàng.
+  - [x] Gắn sự kiện ô nhập Voucher trên `PosScreen.tsx`: Gọi API kiểm tra mã, cập nhật tiền giảm vào giỏ.
+  - [x] Hoàn thiện nút **[Lưu nháp đơn]**: Gọi API lưu giỏ hàng hiện tại vào danh sách nháp và làm sạch giỏ.
+  - [x] Hoàn thiện nút **[Đơn nháp (3)]**: Bấm vào mở modal hiển thị các đơn đang lưu tạm; bấm "Khôi phục" thì nạp lại vào giỏ hàng.
 
 ---
 
