@@ -610,6 +610,103 @@
   cursor: pointer;
 }
 
+/* VIP Customer Dropdown Menu */
+.vip-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.vip-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  width: 290px;
+  background-color: #FFFFFF;
+  border: 1px solid #E8E0D7;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(74, 55, 40, 0.18);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeInDown 0.15s ease-out;
+}
+
+.vip-dropdown-header {
+  padding: 8px 12px;
+  background-color: #F8F5F1;
+  border-bottom: 1px solid #EFEAE3;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7A6958;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vip-dropdown-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.vip-dropdown-item {
+  padding: 9px 12px;
+  border-bottom: 1px solid #F5F1EB;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: background-color 0.15s ease;
+}
+
+.vip-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.vip-dropdown-item:hover {
+  background-color: #FAF6F0;
+}
+
+.vip-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vip-item-name {
+  font-weight: 600;
+  font-size: 12px;
+  color: #2D2721;
+}
+
+.vip-item-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.vip-item-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #8C827A;
+}
+
+.vip-item-points {
+  color: #B58448;
+  font-weight: 600;
+}
+
+.vip-dropdown-empty {
+  padding: 16px;
+  text-align: center;
+  color: #8C827A;
+  font-size: 11px;
+}
+
 /* Cart Items Scroll */
 .cart-items-scroll {
   flex: 1;

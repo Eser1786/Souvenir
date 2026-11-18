@@ -1,0 +1,334 @@
+/* ========================================================
+   UC06 · MODAL ĐƠN NHÁP (LƯU TẠM & KHÔI PHỤC)
+   Phong cách chuẩn MERA POS (be/nâu pastel & hiện đại)
+   ======================================================== */
+
+.draft-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: rgba(28, 28, 30, 0.45);
+  backdrop-filter: blur(3px);
+  animation: draft-fade-in 0.15s ease;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1c1c1e;
+}
+
+.draft-modal {
+  width: 100%;
+  max-width: 680px;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border: 1px solid #ede8e1;
+  border-radius: 18px;
+  box-shadow: 0 24px 48px rgba(90, 82, 76, 0.2);
+  overflow: hidden;
+  animation: draft-pop-in 0.18s ease;
+}
+
+@keyframes draft-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes draft-pop-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Header */
+.draft-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #f0ebe4;
+  background-color: #fdfcfb;
+}
+
+.draft-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.draft-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #f5ede6;
+  color: #b86237;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.draft-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2b2622;
+}
+
+.draft-subtitle {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #8c827a;
+}
+
+.draft-close-btn {
+  background: none;
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c827a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.draft-close-btn:hover {
+  background-color: #f0ebe4;
+  color: #1c1c1e;
+}
+
+/* Body / List */
+.draft-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  background-color: #faf8f5;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Empty State */
+.draft-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: #8c827a;
+}
+
+.draft-empty-icon {
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.draft-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4a423d;
+  margin-bottom: 6px;
+}
+
+.draft-empty-desc {
+  font-size: 13px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+/* Draft Card */
+.draft-card {
+  background-color: #ffffff;
+  border: 1px solid #ebe5dc;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.draft-card:hover {
+  border-color: #d8cec0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+}
+
+.draft-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #f0ebe4;
+}
+
+.draft-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.draft-badge-code {
+  background-color: #eef4ff;
+  color: #1e40af;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.draft-time {
+  font-size: 12px;
+  color: #8c827a;
+}
+
+.draft-customer-tag {
+  font-size: 12px;
+  color: #475569;
+  background-color: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Items Preview */
+.draft-items-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.draft-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.draft-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-item-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  background-color: #f5f1eb;
+  border: 1px solid #ebe5dc;
+}
+
+.draft-item-name {
+  font-weight: 500;
+  color: #2b2622;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-item-qty {
+  color: #8c827a;
+  font-size: 12px;
+}
+
+.draft-item-price {
+  font-weight: 600;
+  color: #4a423d;
+  white-space: nowrap;
+}
+
+/* Bottom summary & actions */
+.draft-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #f5ede6;
+  gap: 12px;
+}
+
+.draft-total-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.draft-total-label {
+  font-size: 11px;
+  color: #8c827a;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.draft-total-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: #b86237;
+}
+
+.draft-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-delete-draft {
+  background-color: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #ffe4e6;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-draft:hover {
+  background-color: #ffe4e6;
+  border-color: #fecdd3;
+  color: #be123c;
+}
+
+.btn-restore-draft {
+  background-color: #2e7d32;
+  color: #ffffff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(46, 125, 50, 0.25);
+  transition: all 0.15s ease;
+}
+
+.btn-restore-draft:hover {
+  background-color: #256b29;
+  box-shadow: 0 4px 10px rgba(46, 125, 50, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-restore-draft:active {
+  transform: translateY(0);
+}
