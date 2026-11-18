@@ -541,13 +541,27 @@ export const PosScreen: React.FC = () => {
     setCart(restoredCart);
 
     if (draft.khachHangId && draft.tenKhachHang) {
+      const matchedVip = vipCustomers.find((c) => c.id === draft.khachHangId);
+      const initialPoints = matchedVip ? matchedVip.diemTichLuy : 0;
+
       setCustomer({
         id: draft.khachHangId,
         hoTen: draft.tenKhachHang,
         soDienThoai: draft.soDienThoaiKhach || '',
-        diemThuong: 0,
+        diemThuong: initialPoints,
         isGuest: false,
       });
+
+      if (draft.soDienThoaiKhach) {
+        findCustomerByPhone(draft.soDienThoaiKhach).then((found) => {
+          if (found) {
+            setCustomer((prev) => ({
+              ...prev,
+              diemThuong: found.diemTichLuy,
+            }));
+          }
+        }).catch(() => undefined);
+      }
     }
 
     if (draft.maGiamGia) {
@@ -565,7 +579,9 @@ export const PosScreen: React.FC = () => {
       setVoucherInput('');
     }
 
-    setUseLoyaltyPoints(draft.diemSuDung > 0);
+    const shouldApplyPoints = (draft.diemSuDung && draft.diemSuDung > 0) ||
+      (draft.soTienGiam >= 5000 && !draft.maGiamGia);
+    setUseLoyaltyPoints(Boolean(shouldApplyPoints));
 
     try {
       await deleteDraftOrder(draft.id);
