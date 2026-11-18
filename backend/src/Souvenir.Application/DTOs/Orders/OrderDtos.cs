@@ -28,6 +28,9 @@ public class CreateOrderRequest
 
     /// <summary>Mã voucher (ví dụ QUATANG10). Server sẽ kiểm tra lại hiệu lực.</summary>
     public string? MaGiamGia { get; set; }
+
+    /// <summary>Số điểm tích lũy khách muốn đổi giảm giá (50 điểm = 5.000 đ, tức 1 điểm = 100 đ).</summary>
+    public int DiemSuDung { get; set; }
 }
 
 public class OrderItemDto
