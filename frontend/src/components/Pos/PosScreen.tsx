@@ -191,9 +191,9 @@ export const PosScreen: React.FC = () => {
 
   // Customer State
   const [defaultCustomer, setDefaultCustomer] = useState<Customer>(DEFAULT_CUSTOMER);
-  const [customer, setCustomer] = useState<Customer>(DEFAULT_CUSTOMER);
+  const [customer, setCustomer] = useState<Customer>(GUEST_CUSTOMER);
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
-  const [customerPhoneInput, setCustomerPhoneInput] = useState('0901 234 567');
+  const [customerPhoneInput, setCustomerPhoneInput] = useState('');
 
   useEffect(() => {
     findCustomerByPhone('0901234567')
@@ -207,7 +207,6 @@ export const PosScreen: React.FC = () => {
           isGuest: false,
         };
         setDefaultCustomer(resolved);
-        setCustomer((prev) => (!prev.isGuest && !prev.id ? resolved : prev));
       })
       .catch(() => undefined);
   }, []);
@@ -366,7 +365,9 @@ export const PosScreen: React.FC = () => {
       setCart([]);
       setAppliedVoucher(null);
       setVoucherInput('');
-      showToast('Đã bắt đầu đơn mới (giỏ hàng trống)', 'info');
+      setCustomer(GUEST_CUSTOMER);
+      setUseLoyaltyPoints(false);
+      showToast('Đã bắt đầu đơn mới (giỏ hàng trống, khách vãng lai)', 'info');
     }
   };
 
@@ -464,7 +465,10 @@ export const PosScreen: React.FC = () => {
   const handleCustomerSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanDigits = customerPhoneInput.replace(/\D/g, '');
-    if (!cleanDigits) return;
+    if (!cleanDigits) {
+      showToast('Vui lòng nhập số điện thoại để tìm kiếm.', 'info');
+      return;
+    }
 
     try {
       const found = await findCustomerByPhone(cleanDigits);
@@ -942,10 +946,10 @@ export const PosScreen: React.FC = () => {
                 className="customer-phone-input"
                 value={customerPhoneInput}
                 onChange={(e) => setCustomerPhoneInput(e.target.value)}
-                placeholder="SĐT: 0901 234 567"
+                placeholder="Nhập SĐT (VD: 0901234567)"
                 autoFocus
               />
-              <button type="submit" className="customer-btn-save">Lưu</button>
+              <button type="submit" className="customer-btn-save">Tìm</button>
               <button
                 type="button"
                 className="customer-btn-cancel"
@@ -958,10 +962,13 @@ export const PosScreen: React.FC = () => {
             <>
               <div
                 className="customer-phone-display"
-                onClick={() => setIsSearchingCustomer(true)}
-                title="Bấm để sửa số điện thoại"
+                onClick={() => {
+                  setCustomerPhoneInput(customer.isGuest ? '' : customer.soDienThoai);
+                  setIsSearchingCustomer(true);
+                }}
+                title="Bấm để tìm kiếm số điện thoại khách hàng"
               >
-                SĐT khách hàng: {customer.soDienThoai || '0901 234 567'}
+                SĐT khách hàng: {customer.isGuest ? 'Chưa có (Khách vãng lai)' : customer.soDienThoai}
               </div>
 
               <div className="customer-meta-row">
@@ -970,7 +977,10 @@ export const PosScreen: React.FC = () => {
                   <button
                     type="button"
                     className="customer-action-link"
-                    onClick={() => setIsSearchingCustomer(true)}
+                    onClick={() => {
+                      setCustomerPhoneInput(customer.isGuest ? '' : customer.soDienThoai);
+                      setIsSearchingCustomer(true);
+                    }}
                   >
                     Tìm SĐT
                   </button>
@@ -995,13 +1005,16 @@ export const PosScreen: React.FC = () => {
                   onClick={() => {
                     if (customer.isGuest) {
                       setCustomer(defaultCustomer);
+                      showToast(`Đã chọn khách hàng VIP: ${defaultCustomer.hoTen}`);
                     } else {
                       setCustomer(GUEST_CUSTOMER);
                       setUseLoyaltyPoints(false);
+                      showToast('Đã chuyển về Khách vãng lai', 'info');
                     }
                   }}
+                  title={customer.isGuest ? 'Bấm để chọn khách VIP mẫu (Ngọc Lan)' : 'Bấm để chuyển về Khách vãng lai'}
                 >
-                  {customer.isGuest ? 'Chọn lại VIP' : 'Khách vãng lai'}
+                  {customer.isGuest ? 'Chọn khách VIP' : 'Khách vãng lai'}
                 </button>
               </div>
             </>
