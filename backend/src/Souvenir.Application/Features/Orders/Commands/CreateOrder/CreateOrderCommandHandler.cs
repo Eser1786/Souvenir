@@ -97,6 +97,40 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
             }
         }
 
+        // ---- Khách hàng (UC09 / UC10): kiểm tra tồn tại, điểm đổi & lấy tỷ lệ tích điểm ----
+        if (req.DiemSuDung < 0)
+        {
+            return Fail("Số điểm sử dụng không hợp lệ.");
+        }
+        if (req.DiemSuDung > 0 && !req.KhachHangId.HasValue)
+        {
+            return Fail("Khách vãng lai không thể sử dụng điểm tích lũy.");
+        }
+
+        var tyLeTichDiem = 0.01m;
+        if (req.KhachHangId.HasValue)
+        {
+            var khachHang = await _context.KhachHangs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(k => k.Id == req.KhachHangId.Value, cancellationToken);
+            if (khachHang == null)
+            {
+                return Fail($"Không tìm thấy khách hàng #{req.KhachHangId}.", 404);
+            }
+            if (req.DiemSuDung > khachHang.DiemTichLuy)
+            {
+                return Fail($"Khách hàng chỉ còn {khachHang.DiemTichLuy} điểm, không đủ {req.DiemSuDung} điểm để đổi.");
+            }
+
+            var tyLeParam = await _context.ThamSos
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TenThamSo == "TyLeTichDiem", cancellationToken);
+            if (tyLeParam != null && decimal.TryParse(tyLeParam.GiaTri, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedRate) && parsedRate >= 0)
+            {
+                tyLeTichDiem = parsedRate;
+            }
+        }
+
         // ---- Lập đơn (giá lấy từ DB, không tin giá client gửi lên) ----
         var donHang = new DonHang
         {
@@ -145,6 +179,11 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
             donHang.MaGiamGiaId = voucher.Id;
         }
 
+        if (req.DiemSuDung > 0)
+        {
+            soTienGiam += req.DiemSuDung * 100m;
+        }
+
         donHang.TongTienThanhToan = Math.Max(0, tongTienHang - soTienGiam);
 
         // ---- Tiền mặt: kiểm tra tiền khách đưa ----
@@ -185,6 +224,25 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
                     }
 
                     tonConLai[item.SanPhamId] = products[item.SanPhamId].SoLuongTon - item.SoLuong;
+                }
+
+                // 4. Trừ điểm đã đổi (nếu có) và cộng điểm tích lũy mới cho khách hàng thành viên (UC10: 1% giá trị đơn, quy đổi 1 điểm = 100 đ)
+                if (req.KhachHangId.HasValue)
+                {
+                    var diemCong = (int)Math.Floor(donHang.TongTienThanhToan * tyLeTichDiem / 100m);
+                    var netDiem = diemCong - req.DiemSuDung;
+                    if (netDiem != 0 || req.DiemSuDung > 0)
+                    {
+                        var updated = await _context.KhachHangs
+                            .Where(k => k.Id == req.KhachHangId.Value && k.DiemTichLuy >= req.DiemSuDung)
+                            .ExecuteUpdateAsync(s => s.SetProperty(k => k.DiemTichLuy, k => k.DiemTichLuy + netDiem), cancellationToken);
+
+                        if (updated == 0 && req.DiemSuDung > 0)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Fail("Điểm tích lũy của khách hàng không đủ để đổi.", 409);
+                        }
+                    }
                 }
 
                 await transaction.CommitAsync(cancellationToken);

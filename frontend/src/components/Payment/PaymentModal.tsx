@@ -27,6 +27,8 @@ export interface PaymentModalProps {
   maGiamGia?: string;
   /** Khách hàng thành viên (UC09). Bỏ trống = khách vãng lai. */
   khachHangId?: number;
+  /** Số điểm tích lũy muốn đổi giảm giá (UC10). */
+  diemSuDung?: number;
   /** Ca làm việc (UC03). Bỏ trống = server tự lấy ca đang mở. */
   caLamViecId?: number;
 }
@@ -83,6 +85,7 @@ const PaymentModalBody: React.FC<PaymentModalProps> = ({
   tongThanhToan,
   maGiamGia,
   khachHangId,
+  diemSuDung = 0,
   caLamViecId,
 }) => {
   const [method, setMethod] = useState<PhuongThucThanhToan>('TienMat');
@@ -142,6 +145,7 @@ const PaymentModalBody: React.FC<PaymentModalProps> = ({
         tienKhachDua: method === 'TienMat' ? tienKhachDua : undefined,
         maGiamGia: maGiamGia || undefined,
         khachHangId,
+        diemSuDung: diemSuDung > 0 ? diemSuDung : undefined,
         caLamViecId,
       });
       setCompletedOrder(order);

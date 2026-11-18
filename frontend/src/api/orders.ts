@@ -14,6 +14,7 @@ export interface CreateOrderRequest {
   caLamViecId?: number;
   khachHangId?: number;
   maGiamGia?: string;
+  diemSuDung?: number;
 }
 
 export interface OrderItemDto {

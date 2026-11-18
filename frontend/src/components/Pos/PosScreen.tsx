@@ -18,6 +18,7 @@ interface CartItem {
 }
 
 interface Customer {
+  id?: number;
   hoTen: string;
   soDienThoai: string;
   diemThuong: number;
@@ -160,9 +161,27 @@ export const PosScreen: React.FC = () => {
   const [draftCount, setDraftCount] = useState(3);
 
   // Customer State
+  const [defaultCustomer, setDefaultCustomer] = useState<Customer>(DEFAULT_CUSTOMER);
   const [customer, setCustomer] = useState<Customer>(DEFAULT_CUSTOMER);
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [customerPhoneInput, setCustomerPhoneInput] = useState('0901 234 567');
+
+  useEffect(() => {
+    findCustomerByPhone('0901234567')
+      .then((found) => {
+        if (!found) return;
+        const resolved: Customer = {
+          id: found.id,
+          hoTen: found.tenKhachHang,
+          soDienThoai: found.soDienThoai,
+          diemThuong: found.diemTichLuy,
+          isGuest: false,
+        };
+        setDefaultCustomer(resolved);
+        setCustomer((prev) => (!prev.isGuest && !prev.id ? resolved : prev));
+      })
+      .catch(() => undefined);
+  }, []);
 
   // Voucher & Discount State (UC05)
   const [voucherInput, setVoucherInput] = useState('');
@@ -422,6 +441,7 @@ export const PosScreen: React.FC = () => {
       const found = await findCustomerByPhone(cleanDigits);
       if (found) {
         setCustomer({
+          id: found.id,
           hoTen: found.tenKhachHang,
           soDienThoai: found.soDienThoai,
           diemThuong: found.diemTichLuy,
@@ -495,6 +515,21 @@ export const PosScreen: React.FC = () => {
     setUseLoyaltyPoints(false);
     // Tải lại tồn kho sau khi đã trừ
     getProducts({ category: selectedCategory, search: searchQuery }).then(setProducts).catch(() => undefined);
+    // Cập nhật lại điểm tích lũy khách hàng sau khi thanh toán
+    if (!customer.isGuest && customer.soDienThoai) {
+      const cleanDigits = customer.soDienThoai.replace(/\D/g, '');
+      if (cleanDigits) {
+        findCustomerByPhone(cleanDigits)
+          .then((found) => {
+            if (found) {
+              setCustomer((prev) =>
+                !prev.isGuest ? { ...prev, id: found.id, diemThuong: found.diemTichLuy } : prev
+              );
+            }
+          })
+          .catch(() => undefined);
+      }
+    }
   };
 
   const handleLogout = () => {
@@ -828,7 +863,7 @@ export const PosScreen: React.FC = () => {
                   className="customer-action-link guest"
                   onClick={() => {
                     if (customer.isGuest) {
-                      setCustomer(DEFAULT_CUSTOMER);
+                      setCustomer(defaultCustomer);
                     } else {
                       setCustomer(GUEST_CUSTOMER);
                       setUseLoyaltyPoints(false);
@@ -1006,6 +1041,10 @@ export const PosScreen: React.FC = () => {
                   showToast('Khách vãng lai không có điểm thưởng tích lũy!', 'info');
                   return;
                 }
+                if (!useLoyaltyPoints && customer.diemThuong < 50) {
+                  showToast('Khách hàng chưa đủ 50 điểm tích lũy để đổi!', 'info');
+                  return;
+                }
                 setUseLoyaltyPoints((prev) => !prev);
               }}
             >
@@ -1093,6 +1132,9 @@ export const PosScreen: React.FC = () => {
         soTienGiam={totalDiscount}
         tongThanhToan={grandTotal}
         maGiamGia={appliedVoucher?.hopLe ? appliedVoucher.maCode : undefined}
+        khachHangId={customer.isGuest ? undefined : customer.id}
+        diemSuDung={useLoyaltyPoints && !customer.isGuest ? 50 : 0}
+        caLamViecId={currentShift?.id}
       />
 
       {/* UC02 & UC03: Modals Ca làm việc & Chấm công */}
