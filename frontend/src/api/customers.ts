@@ -24,6 +24,30 @@ export interface UpdateCustomerData {
   diemTichLuy: number;
 }
 
+export interface CustomerOrderItem {
+  sanPhamId: number;
+  maSP: string;
+  tenSP: string;
+  soLuong: number;
+  donGia: number;
+  thanhTien: number;
+}
+
+export interface CustomerOrder {
+  id: number;
+  maDonHang: string;
+  ngayTao: string;
+  tongTienHang: number;
+  soTienGiam: number;
+  tongTienThanhToan: number;
+  trangThai: string;
+  tenHinhThucThanhToan: string;
+  maGiamGia?: string | null;
+  tenNhanVien: string;
+  soLuongSanPham: number;
+  items: CustomerOrderItem[];
+}
+
 // Fallback customers in case backend is loading or offline
 export const FALLBACK_CUSTOMERS: Customer[] = [
   {
@@ -139,4 +163,9 @@ export const updateCustomer = async (id: number, data: UpdateCustomerData): Prom
 
 export const deleteCustomer = async (id: number): Promise<void> => {
   await apiClient.delete(`/customers/${id}`);
+};
+
+export const getCustomerOrders = async (customerId: number): Promise<CustomerOrder[]> => {
+  const res = await apiClient.get<CustomerOrder[]>(`/customers/${customerId}/orders`);
+  return Array.isArray(res.data) ? res.data : [];
 };

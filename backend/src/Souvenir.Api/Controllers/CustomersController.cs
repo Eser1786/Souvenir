@@ -6,6 +6,7 @@ using Souvenir.Application.Features.Customers.Commands.CreateCustomer;
 using Souvenir.Application.Features.Customers.Commands.DeleteCustomer;
 using Souvenir.Application.Features.Customers.Commands.UpdateCustomer;
 using Souvenir.Application.Features.Customers.Queries.GetCustomerById;
+using Souvenir.Application.Features.Customers.Queries.GetCustomerOrders;
 using Souvenir.Application.Features.Customers.Queries.GetCustomers;
 
 namespace Souvenir.Api.Controllers;
@@ -53,6 +54,24 @@ public class CustomersController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Lấy danh sách lịch sử đơn hàng của một khách hàng (UC09)
+    /// </summary>
+    [HttpGet("{id:int}/orders")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<CustomerOrderDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCustomerOrders(int id, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetCustomerOrdersQuery(id), cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return StatusCode(result.StatusCode, new { message = result.Message });
+        }
+
+        return Ok(result.Data);
     }
 
     /// <summary>
@@ -122,6 +141,7 @@ public class CustomersController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteCustomer(int id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new DeleteCustomerCommand(id), cancellationToken);
