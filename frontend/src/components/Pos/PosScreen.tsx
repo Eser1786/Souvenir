@@ -5,7 +5,7 @@ import { getProducts } from '../../api/products';
 import type { Product } from '../../api/products';
 import { checkDiscount, type CheckDiscountResponse } from '../../api/discounts';
 import { PaymentModal } from '../Payment/PaymentModal';
-import { findCustomerByPhone } from '../../api/customers';
+import { findCustomerByPhone, getCustomers, type Customer as ApiCustomer } from '../../api/customers';
 import { OpenShiftModal } from '../Shifts/OpenShiftModal';
 import { CloseShiftModal } from '../Shifts/CloseShiftModal';
 import { AttendanceModal } from '../Shifts/AttendanceModal';
@@ -69,18 +69,18 @@ const CATEGORIES = [
   'Văn phòng phẩm',
 ];
 
-const DEFAULT_CUSTOMER: Customer = {
-  hoTen: 'Nguyễn Ngọc Lan',
-  soDienThoai: '0901 234 567',
-  diemThuong: 250,
-  isGuest: false,
-};
-
 const GUEST_CUSTOMER: Customer = {
   hoTen: 'Khách vãng lai',
   soDienThoai: '',
   diemThuong: 0,
   isGuest: true,
+};
+
+const getTierBadge = (points: number): { label: string; icon: string; bg: string; color: string } => {
+  if (points >= 500) return { label: 'Kim Cương', icon: '💎', bg: '#E8F5E9', color: '#2E7D32' };
+  if (points >= 200) return { label: 'Vàng', icon: '🥇', bg: '#FFF8E1', color: '#F57F17' };
+  if (points >= 50) return { label: 'Bạc', icon: '🥈', bg: '#ECEFF1', color: '#546E7A' };
+  return { label: 'Đồng', icon: '🥉', bg: '#EFEBE9', color: '#6D4C41' };
 };
 
 // SVG icons
@@ -190,25 +190,15 @@ export const PosScreen: React.FC = () => {
   }, []);
 
   // Customer State
-  const [defaultCustomer, setDefaultCustomer] = useState<Customer>(DEFAULT_CUSTOMER);
   const [customer, setCustomer] = useState<Customer>(GUEST_CUSTOMER);
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [customerPhoneInput, setCustomerPhoneInput] = useState('');
+  const [vipCustomers, setVipCustomers] = useState<ApiCustomer[]>([]);
+  const [showVipDropdown, setShowVipDropdown] = useState(false);
+  const vipDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    findCustomerByPhone('0901234567')
-      .then((found) => {
-        if (!found) return;
-        const resolved: Customer = {
-          id: found.id,
-          hoTen: found.tenKhachHang,
-          soDienThoai: found.soDienThoai,
-          diemThuong: found.diemTichLuy,
-          isGuest: false,
-        };
-        setDefaultCustomer(resolved);
-      })
-      .catch(() => undefined);
+    getCustomers().then(setVipCustomers).catch(() => undefined);
   }, []);
 
   // Voucher & Discount State (UC05)
@@ -219,7 +209,7 @@ export const PosScreen: React.FC = () => {
   const [showVoucherDropdown, setShowVoucherDropdown] = useState(false);
   const voucherContainerRef = useRef<HTMLDivElement>(null);
 
-  // Click outside listener for voucher autocomplete dropdown
+  // Click outside listener for voucher & VIP dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -227,6 +217,12 @@ export const PosScreen: React.FC = () => {
         !voucherContainerRef.current.contains(event.target as Node)
       ) {
         setShowVoucherDropdown(false);
+      }
+      if (
+        vipDropdownRef.current &&
+        !vipDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowVipDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -974,6 +970,19 @@ export const PosScreen: React.FC = () => {
               <div className="customer-meta-row">
                 <span className="customer-name">{customer.hoTen}</span>
                 <div style={{ display: 'flex', gap: '8px' }}>
+                  {!customer.isGuest && (
+                    <button
+                      type="button"
+                      className="customer-action-link"
+                      onClick={() => {
+                        getCustomers().then(setVipCustomers).catch(() => undefined);
+                        setShowVipDropdown((prev) => !prev);
+                      }}
+                      title="Đổi sang khách hàng thành viên khác"
+                    >
+                      Đổi VIP
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="customer-action-link"
@@ -995,27 +1004,80 @@ export const PosScreen: React.FC = () => {
                 </div>
               </div>
 
-              <div className="customer-meta-row">
+              <div className="customer-meta-row" style={{ position: 'relative' }}>
                 <span className="customer-points">
                   Điểm tích lũy: {customer.diemThuong} điểm
                 </span>
-                <button
-                  type="button"
-                  className="customer-action-link guest"
-                  onClick={() => {
-                    if (customer.isGuest) {
-                      setCustomer(defaultCustomer);
-                      showToast(`Đã chọn khách hàng VIP: ${defaultCustomer.hoTen}`);
-                    } else {
-                      setCustomer(GUEST_CUSTOMER);
-                      setUseLoyaltyPoints(false);
-                      showToast('Đã chuyển về Khách vãng lai', 'info');
-                    }
-                  }}
-                  title={customer.isGuest ? 'Bấm để chọn khách VIP mẫu (Ngọc Lan)' : 'Bấm để chuyển về Khách vãng lai'}
-                >
-                  {customer.isGuest ? 'Chọn khách VIP' : 'Khách vãng lai'}
-                </button>
+                <div className="vip-dropdown-container" ref={vipDropdownRef}>
+                  <button
+                    type="button"
+                    className="customer-action-link guest"
+                    onClick={() => {
+                      if (customer.isGuest) {
+                        getCustomers().then(setVipCustomers).catch(() => undefined);
+                        setShowVipDropdown((prev) => !prev);
+                      } else {
+                        setCustomer(GUEST_CUSTOMER);
+                        setUseLoyaltyPoints(false);
+                        setShowVipDropdown(false);
+                        showToast('Đã chuyển về Khách vãng lai', 'info');
+                      }
+                    }}
+                    title={customer.isGuest ? 'Bấm để mở danh sách chọn khách VIP' : 'Bấm để chuyển về Khách vãng lai'}
+                  >
+                    {customer.isGuest ? 'Chọn khách VIP ▾' : 'Khách vãng lai'}
+                  </button>
+
+                  {/* Dropdown danh sách khách hàng VIP từ Database */}
+                  {showVipDropdown && (
+                    <div className="vip-dropdown-menu">
+                      <div className="vip-dropdown-header">
+                        <span>DANH SÁCH KHÁCH THÀNH VIÊN</span>
+                        <span>{vipCustomers.length} khách</span>
+                      </div>
+                      <div className="vip-dropdown-list">
+                        {vipCustomers.length === 0 ? (
+                          <div className="vip-dropdown-empty">Chưa có dữ liệu khách hàng</div>
+                        ) : (
+                          vipCustomers.map((c) => {
+                            const badge = getTierBadge(c.diemTichLuy);
+                            return (
+                              <div
+                                key={c.id}
+                                className="vip-dropdown-item"
+                                onClick={() => {
+                                  setCustomer({
+                                    id: c.id,
+                                    hoTen: c.tenKhachHang,
+                                    soDienThoai: c.soDienThoai,
+                                    diemThuong: c.diemTichLuy,
+                                    isGuest: false,
+                                  });
+                                  setShowVipDropdown(false);
+                                  showToast(`Đã chọn khách hàng: ${c.tenKhachHang} (⭐ ${c.diemTichLuy} điểm)`);
+                                }}
+                              >
+                                <div className="vip-item-top">
+                                  <span className="vip-item-name">{c.tenKhachHang}</span>
+                                  <span
+                                    className="vip-item-badge"
+                                    style={{ backgroundColor: badge.bg, color: badge.color }}
+                                  >
+                                    {badge.icon} {badge.label}
+                                  </span>
+                                </div>
+                                <div className="vip-item-bottom">
+                                  <span>📞 {c.soDienThoai}</span>
+                                  <span className="vip-item-points">⭐ {c.diemTichLuy} điểm</span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
