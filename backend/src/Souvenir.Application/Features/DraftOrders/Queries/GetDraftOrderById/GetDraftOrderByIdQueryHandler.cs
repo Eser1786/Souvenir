@@ -62,6 +62,9 @@ public class GetDraftOrderByIdQueryHandler : IRequestHandler<GetDraftOrderByIdQu
         }
 
         decimal soTienGiam = Math.Max(0m, tongTienHang - o.TongTienThanhToan);
+        decimal voucherGiam = o.MaGiamGia != null ? o.MaGiamGia.TinhTienGiam(tongTienHang) : 0m;
+        decimal diemGiam = Math.Max(0m, soTienGiam - voucherGiam);
+        int diemSuDung = (int)Math.Round(diemGiam / 100m);
 
         return new DraftOrderDto
         {
@@ -75,6 +78,7 @@ public class GetDraftOrderByIdQueryHandler : IRequestHandler<GetDraftOrderByIdQu
             TenKhachHang = kh?.TenKhachHang,
             SoDienThoaiKhach = kh?.SoDienThoai,
             MaGiamGia = o.MaGiamGia?.MaCode,
+            DiemSuDung = diemSuDung,
             TongTienHang = tongTienHang,
             SoTienGiam = soTienGiam,
             TongTienThanhToan = o.TongTienThanhToan,

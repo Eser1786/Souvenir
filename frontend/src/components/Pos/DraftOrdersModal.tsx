@@ -105,6 +105,11 @@ export const DraftOrdersModal: React.FC<DraftOrdersModalProps> = ({
                         🎫 {draft.maGiamGia}
                       </span>
                     )}
+                    {draft.diemSuDung > 0 && (
+                      <span className="draft-customer-tag" style={{ backgroundColor: '#ecfdf5', color: '#065f46', borderColor: '#a7f3d0' }}>
+                        ⭐ Đổi {draft.diemSuDung} điểm (-{formatVnd(draft.diemSuDung * 100)})
+                      </span>
+                    )}
                   </div>
                   <span style={{ fontSize: '12px', color: '#8c827a' }}>
                     {draft.items.length} mặt hàng ({draft.tongSoLuongMon} món)
@@ -132,7 +137,14 @@ export const DraftOrdersModal: React.FC<DraftOrdersModalProps> = ({
                 {/* Bottom Total & Actions */}
                 <div className="draft-card-bottom">
                   <div className="draft-total-group">
-                    <span className="draft-total-label">Tổng tiền tạm tính</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span className="draft-total-label">Tổng thanh toán</span>
+                      {draft.soTienGiam > 0 && (
+                        <span style={{ fontSize: '11px', color: '#059669', fontWeight: 500 }}>
+                          (Đã giảm: -{formatVnd(draft.soTienGiam)})
+                        </span>
+                      )}
+                    </div>
                     <span className="draft-total-val">{formatVnd(draft.tongTienThanhToan)}</span>
                   </div>
 
