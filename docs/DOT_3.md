@@ -6,8 +6,8 @@
 
 ### 1. PHÂN CÔNG NHIỆM VỤ CHI TIẾT ĐỢT 3
 
-#### 👤 Người 6: Dashboard Báo cáo Doanh thu & Thống kê (`UC14`)
-*Bắt đầu làm khi trong DB đã có các đơn hàng do nhóm test ở Đợt 2:*
+#### 👤 Thành: Dashboard Báo cáo Doanh thu & Thống kê (`UC14`)
+*Bắt đầu làm khi trong DB đã có các đơn hàng do Tâm & Đạt bán ra ở Đợt 2:*
 * **Backend**:
   - Viết API `GET /api/reports/revenue`: Thống kê tổng doanh thu, số đơn theo ngày/tuần/tháng.
   - Viết API `GET /api/reports/top-products`: Lấy top 5 sản phẩm bán chạy nhất kèm số lượng bán.
@@ -18,13 +18,13 @@
     * Biểu đồ đường / cột doanh thu theo ngày (dùng thư viện `recharts` hoặc `chart.js`).
     * Biểu đồ tròn hoặc bảng danh sách Top 5 món bán chạy nhất.
 
-#### 👤 Người 5: Chức năng Kiểm kê kho hàng (`UC13`)
+#### 👤 Thái Anh: Chức năng Kiểm kê kho hàng (`UC13`)
 * **Backend**:
   - Tạo Entity & API `PhieuKiemKe`, `ChiTietPhieuKiemKe`: Ghi nhận số lượng thực tế kiểm đếm, tính số lượng chênh lệch (Thừa / Thiếu) và cân bằng lại tồn kho.
 * **Frontend**:
   - Tạo trang `StockAuditScreen.tsx`: Cho phép chọn sản phẩm, nhập số lượng đếm được trong kho, ghi lý do chênh lệch và bấm xác nhận cân đối kho.
 
-#### 👥 CẢ NHÓM: Rà soát lỗi (Bug Bashing) & Làm sạch CSDL (Ngày 6)
+#### 👤 Hiệp (Lead) & CẢ NHÓM: Rà soát lỗi (Bug Bashing) & Làm sạch CSDL (Ngày 6)
 * [ ] Kiểm tra lỗi phân quyền: Nhân viên không thể vào được trang Báo cáo hay trang Quản lý nhân sự.
 * [ ] Kiểm tra lỗi tính toán tiền: Đảm bảo Tạm tính - Giảm giá voucher - Giảm giá đổi điểm = Tổng thanh toán.
 * [ ] Kiểm tra lỗi ảnh: Tất cả sản phẩm đều hiển thị ảnh đẹp, không bị vỡ link hay 404.
