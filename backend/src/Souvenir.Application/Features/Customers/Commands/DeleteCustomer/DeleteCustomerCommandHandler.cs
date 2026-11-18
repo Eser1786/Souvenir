@@ -24,6 +24,16 @@ public class DeleteCustomerCommandHandler : IRequestHandler<DeleteCustomerComman
             return CustomerResult<bool>.Failed($"Không tìm thấy khách hàng với mã #{request.Id}.", 404);
         }
 
+        var hasOrders = await _context.DonHangs
+            .AsNoTracking()
+            .AnyAsync(d => d.KhachHangId == request.Id, cancellationToken);
+
+        if (hasOrders)
+        {
+            return CustomerResult<bool>.Failed(
+                "Không thể xóa khách hàng đã có lịch sử mua hàng trong hệ thống.", 409);
+        }
+
         _context.KhachHangs.Remove(customer);
         await _context.SaveChangesAsync(cancellationToken);
 

@@ -8,9 +8,18 @@ import {
   deleteCustomer,
 } from '../../api/customers';
 import type { Customer } from '../../api/customers';
+import { CustomerOrderHistoryModal } from './CustomerOrderHistoryModal';
 import './CustomerManagementScreen.css';
 
 // SVG Icons
+const IconHistory = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+);
 const IconSearch = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
@@ -116,6 +125,9 @@ export const CustomerManagementScreen: React.FC = () => {
   // Delete Confirmation State
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
 
+  // Order History Modal State (UC09 - Đợt 2)
+  const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
+
   // Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -125,20 +137,26 @@ export const CustomerManagementScreen: React.FC = () => {
   };
 
   // Load Customers
-  const loadCustomers = async () => {
-    setIsLoading(true);
-    try {
-      const data = await getCustomers();
-      setCustomers(data);
-    } catch {
-      showToast('Không thể tải danh sách khách hàng từ máy chủ', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadCustomers();
+    let ignore = false;
+
+    getCustomers()
+      .then((data) => {
+        if (!ignore) {
+          setCustomers(data);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setToast({ message: 'Không thể tải danh sách khách hàng từ máy chủ', type: 'error' });
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   // Filtered List
@@ -244,8 +262,12 @@ export const CustomerManagementScreen: React.FC = () => {
       setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       showToast(`Đã xóa hồ sơ khách hàng ${deleteTarget.tenKhachHang}`);
       setDeleteTarget(null);
-    } catch {
-      showToast('Không thể xóa khách hàng. Có thể khách đã có đơn hàng.', 'error');
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Không thể xóa khách hàng. Có thể khách đã có đơn hàng.';
+      showToast(msg, 'error');
+      setDeleteTarget(null);
     }
   };
 
@@ -381,7 +403,7 @@ export const CustomerManagementScreen: React.FC = () => {
                 <th>Số điện thoại</th>
                 <th>Điểm tích lũy</th>
                 <th>Hạng thành viên</th>
-                <th style={{ textAlign: 'right', width: '120px' }}>Hành động</th>
+                <th style={{ textAlign: 'right', width: '220px' }}>Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -439,6 +461,13 @@ export const CustomerManagementScreen: React.FC = () => {
                       </td>
                       <td>
                         <div className="action-btn-group" style={{ justifyContent: 'flex-end' }}>
+                          <button
+                            className="btn-history-action"
+                            title="Xem lịch sử mua hàng"
+                            onClick={() => setHistoryCustomer(cust)}
+                          >
+                            <IconHistory /> Lịch sử
+                          </button>
                           <button
                             className="btn-icon-action"
                             title="Chỉnh sửa thông tin"
@@ -577,6 +606,14 @@ export const CustomerManagementScreen: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Order History Modal (UC09 - Đợt 2) */}
+      {historyCustomer && (
+        <CustomerOrderHistoryModal
+          customer={historyCustomer}
+          onClose={() => setHistoryCustomer(null)}
+        />
       )}
 
       {/* Toast Notification */}
