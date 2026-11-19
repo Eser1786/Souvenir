@@ -72,28 +72,47 @@ export const DashboardScreen: React.FC = () => {
             <span className="module-btn">Xem danh mục kho →</span>
           </div>
 
-          <div className="module-card">
+          <div
+            className="module-card clickable-card"
+            onClick={() => navigate('/customers')}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="module-icon-box">👥</div>
             <h2 className="module-title">Khách hàng &amp; Thành viên</h2>
             <p className="module-desc">
-              Tra cứu thông tin khách hàng thân thiết, tích điểm đổi quà và chăm sóc khách.
+              Tra cứu thông tin khách hàng thân thiết, tích điểm đổi quà và xem lịch sử mua sắm.
             </p>
             <span className="module-btn">Xem danh sách khách hàng →</span>
           </div>
 
           {roleClass === 'quanly' && (
-            <div
-              className="module-card clickable-card"
-              onClick={() => navigate('/users')}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="module-icon-box">🛡️</div>
-              <h2 className="module-title">Nhân sự &amp; Phân quyền</h2>
-              <p className="module-desc">
-                Quản lý danh sách nhân viên, tài khoản đăng nhập và phân quyền truy cập hệ thống.
-              </p>
-              <span className="module-btn">Quản lý nhân viên →</span>
-            </div>
+            <>
+              <div
+                className="module-card clickable-card"
+                onClick={() => navigate('/reports')}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="module-icon-box">📊</div>
+                <h2 className="module-title">Báo cáo &amp; Thống kê</h2>
+                <p className="module-desc">
+                  Xem biểu đồ doanh thu, số liệu hóa đơn bán lẻ, đối soát ca và top sản phẩm bán chạy.
+                </p>
+                <span className="module-btn">Xem báo cáo doanh thu →</span>
+              </div>
+
+              <div
+                className="module-card clickable-card"
+                onClick={() => navigate('/users')}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="module-icon-box">🛡️</div>
+                <h2 className="module-title">Nhân sự &amp; Phân quyền</h2>
+                <p className="module-desc">
+                  Quản lý danh sách nhân viên, tài khoản đăng nhập và phân quyền truy cập hệ thống.
+                </p>
+                <span className="module-btn">Quản lý nhân viên →</span>
+              </div>
+            </>
           )}
         </div>
       </main>

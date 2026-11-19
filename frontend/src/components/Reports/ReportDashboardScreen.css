@@ -1,0 +1,793 @@
+/* ==========================================================================
+   ReportDashboardScreen.css - UC14 MERA SOUVENIR
+   Palette: Warm Ivory (#FAF7F2), Camel Tan (#C8A27A), Espresso (#2B2523)
+   ========================================================================== */
+
+.reports-screen {
+  min-height: 100vh;
+  background-color: #FAF7F2;
+  color: #2B2523;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.reports-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #EAE3DB;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(43, 37, 35, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.reports-header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.brand-badge {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #2B2523;
+  margin: 0;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #C8A27A;
+}
+
+.header-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #FAF7F2;
+  border: 1px solid #EAE3DB;
+  border-radius: 999px;
+  color: #5A4E46;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.nav-pill-btn:hover {
+  background: #F4EFEB;
+  border-color: #C8A27A;
+  color: #2B2523;
+}
+
+.reports-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C8A27A, #A67C52);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.user-info-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-display-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2B2523;
+}
+
+.user-role-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8C6239;
+  background: #FAF0E6;
+  padding: 1px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.btn-header-logout {
+  background: transparent;
+  border: 1px solid #EAE3DB;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #7A6E65;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-header-logout:hover {
+  background: #FEEBEA;
+  color: #C25E5E;
+  border-color: #F5C6C6;
+}
+
+/* Main Container */
+.reports-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 32px 64px;
+  width: 100%;
+}
+
+/* Page Title & Controls */
+.reports-top-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.page-title-box h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #2B2523;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.3px;
+}
+
+.page-title-box p {
+  font-size: 14px;
+  color: #7A6E65;
+  margin: 0;
+}
+
+.filter-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Period Pills */
+.period-tabs {
+  display: flex;
+  background: #FFFFFF;
+  border: 1px solid #EAE3DB;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.period-tab-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: #6E6259;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.period-tab-btn:hover {
+  color: #2B2523;
+  background: #F4EFEB;
+}
+
+.period-tab-btn.active {
+  background: #2B2523;
+  color: #FFFFFF;
+}
+
+/* Date range inputs for custom */
+.custom-date-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  border: 1px solid #EAE3DB;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.custom-date-box input {
+  border: 1px solid #EAE3DB;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: #2B2523;
+}
+
+/* Export Buttons */
+.btn-export-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid #C8A27A;
+  color: #8C6239;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-export:hover {
+  background: #C8A27A;
+  color: #FFFFFF;
+}
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #FFFFFF;
+  border: 1px solid #EAE3DB;
+  border-radius: 8px;
+  color: #5A4E46;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-refresh:hover {
+  background: #F4EFEB;
+  border-color: #C8A27A;
+  color: #2B2523;
+}
+
+/* ==========================================================================
+   3 Thẻ Số Liệu Tổng Quan (Key Metrics)
+   ========================================================================== */
+.overview-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1024px) {
+  .overview-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .overview-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metric-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE3DB;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 2px 10px rgba(43, 37, 35, 0.03);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(43, 37, 35, 0.06);
+}
+
+.metric-card.primary {
+  border-left: 4px solid #C8A27A;
+}
+
+.metric-card.orders {
+  border-left: 4px solid #4A90E2;
+}
+
+.metric-card.inventory {
+  border-left: 4px solid #50B83C;
+}
+
+.metric-card.profit {
+  border-left: 4px solid #E67E22;
+}
+
+.metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.metric-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7A6E65;
+}
+
+.metric-icon-bubble {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FAF7F2;
+  color: #8C6239;
+}
+
+.metric-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: #2B2523;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+.metric-subtitle {
+  font-size: 12px;
+  color: #928377;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metric-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+/* Navigation Tabs inside Reports */
+.reports-section-nav {
+  display: flex;
+  border-bottom: 1px solid #EAE3DB;
+  margin-bottom: 24px;
+  gap: 8px;
+}
+
+.section-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  color: #7A6E65;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.section-nav-tab:hover {
+  color: #2B2523;
+}
+
+.section-nav-tab.active {
+  color: #C8A27A;
+  border-bottom-color: #C8A27A;
+}
+
+/* ==========================================================================
+   Section: Biểu Đồ Doanh Thu & Xu Hướng
+   ========================================================================== */
+.chart-panel-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE3DB;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 3px 12px rgba(43, 37, 35, 0.03);
+  margin-bottom: 28px;
+}
+
+.chart-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chart-title-box h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #2B2523;
+  margin: 0 0 4px 0;
+}
+
+.chart-title-box p {
+  font-size: 13px;
+  color: #7A6E65;
+  margin: 0;
+}
+
+.chart-type-toggles {
+  display: flex;
+  background: #FAF7F2;
+  border: 1px solid #EAE3DB;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.chart-type-btn {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6E6259;
+}
+
+.chart-type-btn.active {
+  background: #FFFFFF;
+  color: #2B2523;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.svg-chart-container {
+  width: 100%;
+  overflow-x: auto;
+  position: relative;
+}
+
+.svg-chart-container svg {
+  display: block;
+  width: 100%;
+  min-width: 600px;
+  height: 280px;
+}
+
+.chart-tooltip-hover {
+  pointer-events: none;
+}
+
+/* Dual Column Layout: Top Products & Quick Inventory Stats */
+.dual-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 900px) {
+  .dual-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Top Products Box */
+.top-products-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE3DB;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 3px 12px rgba(43, 37, 35, 0.03);
+}
+
+.top-products-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.top-products-header h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #2B2523;
+  margin: 0;
+}
+
+.top-products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.top-product-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #FAF7F2;
+  transition: background 0.15s;
+}
+
+.top-product-row:hover {
+  background: #F4EFEB;
+}
+
+.product-rank-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #EAE3DB;
+  color: #5A4E46;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.product-rank-badge.rank-1 {
+  background: #FFD700;
+  color: #8B6508;
+}
+
+.product-rank-badge.rank-2 {
+  background: #E0E0E0;
+  color: #555555;
+}
+
+.product-rank-badge.rank-3 {
+  background: #CD7F32;
+  color: #FFFFFF;
+}
+
+.product-mini-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #FFFFFF;
+  border: 1px solid #EAE3DB;
+  object-fit: contain;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.product-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-row-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2B2523;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.product-row-category {
+  font-size: 12px;
+  color: #8C7E74;
+}
+
+.product-row-stat {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.product-stat-revenue {
+  font-size: 14px;
+  font-weight: 800;
+  color: #C8A27A;
+}
+
+.product-stat-qty {
+  font-size: 12px;
+  color: #7A6E65;
+}
+
+/* Top Products Donut / Share Visualizer */
+.donut-chart-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px dashed #EAE3DB;
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.donut-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Shifts Table */
+.shifts-table-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE3DB;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 3px 12px rgba(43, 37, 35, 0.03);
+}
+
+.shifts-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.shifts-table-header h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #2B2523;
+  margin: 0;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.data-table th {
+  background: #FAF7F2;
+  color: #7A6E65;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-bottom: 2px solid #EAE3DB;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #EAE3DB;
+  color: #2B2523;
+}
+
+.data-table tr:hover td {
+  background: #FCFAF7;
+}
+
+.shift-status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.shift-status-badge.closed {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.shift-status-badge.open {
+  background: #E3F2FD;
+  color: #1565C0;
+}
+
+.shift-status-badge.discrepancy {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+.diff-positive {
+  color: #2E7D32;
+  font-weight: 700;
+}
+
+.diff-negative {
+  color: #C25E5E;
+  font-weight: 700;
+}
+
+.diff-zero {
+  color: #7A6E65;
+}
+
+/* Empty & Loading States */
+.empty-state-box {
+  padding: 48px 20px;
+  text-align: center;
+  color: #928377;
+}
+
+.empty-state-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.loading-spinner-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 20px;
+  gap: 16px;
+  color: #7A6E65;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #EAE3DB;
+  border-top-color: #C8A27A;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

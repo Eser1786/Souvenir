@@ -286,6 +286,13 @@ export const CustomerManagementScreen: React.FC = () => {
               <IconArrowLeft /> Quay lại Bán hàng (POS)
             </button>
             <span className="nav-pill-btn active">Hồ sơ khách hàng</span>
+            {(user?.vaiTro?.toLowerCase().includes('quản lý') ||
+              user?.vaiTro?.toLowerCase().includes('admin') ||
+              user?.vaiTro?.toLowerCase().includes('quanly')) && (
+              <button className="nav-pill-btn" onClick={() => navigate('/reports')}>
+                📊 Báo cáo doanh thu
+              </button>
+            )}
           </nav>
         </div>
 
