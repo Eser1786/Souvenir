@@ -20,7 +20,12 @@ public class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, List<Pr
             .AsNoTracking()
             .Include(p => p.DanhMuc)
             .Include(p => p.DonViTinh)
-            .Where(p => p.TrangThai == "KinhDoanh");
+            .AsQueryable();
+
+        if (!request.IncludeAllStatus)
+        {
+            query = query.Where(p => p.TrangThai == "KinhDoanh");
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Category) &&
             !request.Category.Equals("Tất cả", StringComparison.OrdinalIgnoreCase) &&
@@ -72,11 +77,15 @@ public class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, List<Pr
                 Id = p.Id,
                 MaSP = p.MaSP,
                 TenSP = p.TenSP,
+                DanhMucId = p.DanhMucId,
                 TenDanhMuc = p.DanhMuc != null ? p.DanhMuc.TenDanhMuc : string.Empty,
+                DonViTinhId = p.DonViTinhId,
+                TenDonVi = p.DonViTinh != null ? p.DonViTinh.TenDonVi : null,
+                GiaNhap = p.GiaNhap,
                 GiaBan = p.GiaBan,
                 SoLuongTon = p.SoLuongTon,
-                HinhAnh = p.HinhAnh,
-                TenDonVi = p.DonViTinh != null ? p.DonViTinh.TenDonVi : null
+                TrangThai = p.TrangThai,
+                HinhAnh = p.HinhAnh
             })
             .ToListAsync(cancellationToken);
 

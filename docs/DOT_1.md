@@ -9,16 +9,16 @@
 #### 👤 Khang: CRUD Sản phẩm & Phiếu nhập kho (`UC11`, `UC12`)
 *Đã có sẵn Entity `SanPham` và API `GET /api/products` (cột ảnh trong DB là `imageUrl`, Entity C# là `HinhAnh`).*
 * **Backend**:
-  - [ ] Viết API Thêm sản phẩm mới: `POST /api/products` (nhận `imageUrl` / map vào `HinhAnh`).
-  - [ ] Viết API Cập nhật sản phẩm: `PUT /api/products/{id}`.
-  - [ ] Viết API Xóa / Ngừng kinh doanh sản phẩm: `DELETE /api/products/{id}`.
-  - [ ] Tạo Entity & API `PhieuNhapKho`, `ChiTietPhieuNhapKho` (khi nhập kho thì **cộng thêm vào tồn kho `soLuongTon`**).
+  - [x] Viết API Thêm sản phẩm mới: `POST /api/products` (nhận `imageUrl` / map vào `HinhAnh`).
+  - [x] Viết API Cập nhật sản phẩm: `PUT /api/products/{id}`.
+  - [x] Viết API Xóa / Ngừng kinh doanh sản phẩm: `DELETE /api/products/{id}`.
+  - [x] Tạo Entity & API `PhieuNhapKho`, `ChiTietPhieuNhapKho` (khi nhập kho thì **cộng thêm vào tồn kho `soLuongTon`**).
 * **Frontend**:
-  - [ ] Tạo trang `ProductManagementScreen.tsx` (trong `components/Products/`): Bảng danh sách sản phẩm, lọc theo danh mục, modal Thêm/Sửa (có ô paste URL ảnh và preview trực tiếp).
-  - [ ] Tạo trang `GoodsReceiptScreen.tsx` (trong `components/Inventory/`): Form tạo phiếu nhập hàng từ Nhà cung cấp.
+  - [x] Tạo trang `ProductManagementScreen.tsx` (trong `components/Products/`): Bảng danh sách sản phẩm, lọc theo danh mục, modal Thêm/Sửa (có ô paste URL ảnh và preview trực tiếp).
+  - [x] Tạo trang `GoodsReceiptScreen.tsx` (trong `components/Inventory/`): Form tạo phiếu nhập hàng từ Nhà cung cấp.
 
 ---
 
 ### 🎯 TIÊU CHÍ KHÉP LẠI ĐỢT 1 (DEFINITION OF DONE)
-* [ ] Quản lý có thể thêm, sửa, xóa sản phẩm mới có ảnh (`imageUrl`).
-* [ ] Tạo phiếu nhập kho thành công và số lượng tồn kho của sản phẩm tăng lên tương ứng.
+* [x] Quản lý có thể thêm, sửa, xóa sản phẩm mới có ảnh (`imageUrl`).
+* [x] Tạo phiếu nhập kho thành công và số lượng tồn kho của sản phẩm tăng lên tương ứng.
