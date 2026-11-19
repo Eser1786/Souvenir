@@ -784,7 +784,7 @@ export const PosScreen: React.FC = () => {
             <button
               type="button"
               className="nav-item"
-              onClick={() => showToast('Mở quản lý danh mục Sản phẩm...', 'info')}
+              onClick={() => navigate('/products')}
             >
               <span className="nav-icon"><IconProduct /></span>
               <span>Sản phẩm</span>
