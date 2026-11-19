@@ -5,7 +5,7 @@ import { getProducts } from '../../api/products';
 import type { Product } from '../../api/products';
 import { checkDiscount, type CheckDiscountResponse } from '../../api/discounts';
 import { PaymentModal } from '../Payment/PaymentModal';
-import { findCustomerByPhone, getCustomers, type Customer as ApiCustomer } from '../../api/customers';
+import { findCustomerByPhone, getCustomers, createCustomer, type Customer as ApiCustomer } from '../../api/customers';
 import { OpenShiftModal } from '../Shifts/OpenShiftModal';
 import { CloseShiftModal } from '../Shifts/CloseShiftModal';
 import { AttendanceModal } from '../Shifts/AttendanceModal';
@@ -458,6 +458,10 @@ export const PosScreen: React.FC = () => {
   }, [cart]);
 
   // Customer handlers
+  const [isQuickCreateCustomerModalOpen, setIsQuickCreateCustomerModalOpen] = useState(false);
+  const [quickCustomerName, setQuickCustomerName] = useState('');
+  const [isQuickCreating, setIsQuickCreating] = useState(false);
+
   const handleCustomerSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanDigits = customerPhoneInput.replace(/\D/g, '');
@@ -479,10 +483,50 @@ export const PosScreen: React.FC = () => {
         setIsSearchingCustomer(false);
         showToast(`Tìm thấy khách hàng: ${found.tenKhachHang} (⭐ ${found.diemTichLuy} điểm)`);
       } else {
-        showToast(`Chưa có hồ sơ cho SĐT ${customerPhoneInput}. Bạn có thể tạo mới trong trang Khách hàng.`, 'info');
+        setQuickCustomerName('');
+        setIsQuickCreateCustomerModalOpen(true);
+        showToast(`Chưa có hồ sơ cho SĐT ${customerPhoneInput}. Hãy tạo nhanh hồ sơ cho khách.`, 'info');
       }
     } catch {
       showToast('Có lỗi khi tra cứu thông tin khách hàng.', 'info');
+    }
+  };
+
+  const handleQuickCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickCustomerName.trim()) {
+      showToast('Vui lòng nhập họ và tên khách hàng.', 'info');
+      return;
+    }
+    const cleanDigits = customerPhoneInput.replace(/\D/g, '');
+    if (!cleanDigits || cleanDigits.length < 10) {
+      showToast('Số điện thoại không hợp lệ (phải đủ 10 số).', 'info');
+      return;
+    }
+
+    setIsQuickCreating(true);
+    try {
+      const created = await createCustomer({
+        soDienThoai: cleanDigits,
+        tenKhachHang: quickCustomerName.trim(),
+      });
+      setCustomer({
+        id: created.id,
+        hoTen: created.tenKhachHang,
+        soDienThoai: created.soDienThoai,
+        diemThuong: created.diemTichLuy || 0,
+        isGuest: false,
+      });
+      setIsSearchingCustomer(false);
+      setIsQuickCreateCustomerModalOpen(false);
+      showToast(`Đã tạo hồ sơ cho ${created.tenKhachHang} và áp dụng vào đơn!`, 'success');
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Có lỗi khi tạo nhanh hồ sơ khách hàng.';
+      showToast(msg, 'error');
+    } finally {
+      setIsQuickCreating(false);
     }
   };
 
@@ -752,7 +796,7 @@ export const PosScreen: React.FC = () => {
                 <button
                   type="button"
                   className="nav-item"
-                  onClick={() => showToast('Mở Báo cáo doanh thu...', 'info')}
+                  onClick={() => navigate('/reports')}
                 >
                   <span className="nav-icon"><IconReport /></span>
                   <span>Báo cáo doanh thu</span>
@@ -1402,6 +1446,80 @@ export const PosScreen: React.FC = () => {
         onRestore={handleRestoreDraft}
         onDelete={handleDeleteDraft}
       />
+
+      {/* Modal Tạo nhanh hồ sơ khách hàng ngay tại POS (UC09) */}
+      {isQuickCreateCustomerModalOpen && (
+        <div className="pos-modal-backdrop" onClick={() => setIsQuickCreateCustomerModalOpen(false)}>
+          <div
+            className="pos-modal-dialog"
+            style={{ maxWidth: '420px', padding: '24px', background: '#FFFFFF', borderRadius: '14px', border: '1px solid #EAE3DB' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 800, color: '#2B2523' }}>
+              👤 Đăng ký khách hàng mới
+            </h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#7A6E65' }}>
+              Số điện thoại: <strong>{customerPhoneInput}</strong> chưa có hồ sơ trong hệ thống. Nhập họ tên để tạo mới nhanh:
+            </p>
+            <form onSubmit={handleQuickCreateCustomer}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: '#5A4E46' }}>
+                  HỌ VÀ TÊN KHÁCH HÀNG:
+                </label>
+                <input
+                  type="text"
+                  value={quickCustomerName}
+                  onChange={(e) => setQuickCustomerName(e.target.value)}
+                  placeholder="Ví dụ: Nguyễn Văn Bảo"
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #C8A27A',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsQuickCreateCustomerModalOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #EAE3DB',
+                    background: '#FAF7F2',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  Bỏ qua
+                </button>
+                <button
+                  type="submit"
+                  disabled={isQuickCreating}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#C8A27A',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                  }}
+                >
+                  {isQuickCreating ? 'Đang tạo...' : 'Lưu & Chọn khách này'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Toast thông báo phản hồi */}
       {toastMessage && (

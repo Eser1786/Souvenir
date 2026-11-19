@@ -6,10 +6,19 @@ import { PosScreen } from './components/Pos/PosScreen';
 import { CustomerManagementScreen } from './components/Customer/CustomerManagementScreen';
 import { ReturnsScreen } from './components/Returns/ReturnsScreen';
 import { UsersManagementScreen } from './components/UsersManagement/UsersManagementScreen';
+import { ReportDashboardScreen } from './components/Reports/ReportDashboardScreen';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+const ManagerRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { user, isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  const role = user?.vaiTro?.toLowerCase() || '';
+  const isManager = role.includes('quản lý') || role.includes('admin') || role.includes('quanly');
+  return isManager ? children : <Navigate to="/pos" replace />;
 };
 
 const PublicRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -53,14 +62,22 @@ export const AppContent: React.FC = () => {
         }
       />
       <Route
-        path="/users"
+        path="/reports"
         element={
-          <ProtectedRoute>
-            <UsersManagementScreen />
-          </ProtectedRoute>
+          <ManagerRoute>
+            <ReportDashboardScreen />
+          </ManagerRoute>
         }
       />
-      <Route path="/dashboard" element={<Navigate to="/pos" replace />} />
+      <Route
+        path="/users"
+        element={
+          <ManagerRoute>
+            <UsersManagementScreen />
+          </ManagerRoute>
+        }
+      />
+      <Route path="/dashboard" element={<Navigate to="/reports" replace />} />
       <Route path="*" element={<Navigate to="/pos" replace />} />
     </Routes>
   );

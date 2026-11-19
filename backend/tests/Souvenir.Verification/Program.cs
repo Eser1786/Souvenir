@@ -14,6 +14,10 @@ using Souvenir.Application.Features.DraftOrders.Commands.CreateDraftOrder;
 using Souvenir.Application.Features.DraftOrders.Commands.DeleteDraftOrder;
 using Souvenir.Application.Features.DraftOrders.Queries.GetDraftOrders;
 using Souvenir.Application.Interfaces;
+using Souvenir.Application.Features.Reports.Queries.GetRevenueReport;
+using Souvenir.Application.Features.Reports.Queries.GetTopProducts;
+using Souvenir.Application.Features.Reports.Queries.GetShiftsReport;
+using Souvenir.Application.Features.Customers.Queries.GetCustomerOrders;
 using Souvenir.Domain.Constants;
 using Souvenir.Domain.Entities;
 using Souvenir.Infrastructure.Data;
@@ -61,6 +65,14 @@ class Program
         await Test_CreateDraftOrder_Success_DoesNotDeductStock();
         await Test_GetDraftOrders_ReturnsDraftOrdersOnly();
         await Test_DeleteDraftOrder_RemovesOrderAndDetails();
+
+        Console.WriteLine("\n--- VERIFICATION SUITE FOR UC14 (BÁO CÁO DOANH THU & THỐNG KÊ) ---");
+        await Test_GetRevenueReport_CalculatesCorrectTotals();
+        await Test_GetTopProducts_ReturnsRankedProducts();
+        await Test_GetShiftsReport_CalculatesCashAndTransferRevenues();
+
+        Console.WriteLine("\n--- VERIFICATION SUITE FOR UC09 (LỊCH SỬ ĐƠN HÀNG KHÁCH) ---");
+        await Test_GetCustomerOrders_ReturnsCustomerHistory();
 
         Console.WriteLine("\n===============================================================");
         Console.WriteLine($"   TEST RESULTS: {_passedTests} PASSED, {_failedTests} FAILED");
@@ -500,6 +512,124 @@ class Program
             "UC06: DeleteDraftOrder removes both DonHang and ChiTietDonHang records",
             res.IsSuccess && orderAfter == null && detailsAfter.Count == 0,
             $"IsSuccess: {res.IsSuccess}, Order exists: {orderAfter != null}, Details count: {detailsAfter.Count}"
+        );
+    }
+
+    private static async Task Test_GetRevenueReport_CalculatesCorrectTotals()
+    {
+        using var context = CreateInMemoryDbContext();
+        var now = DateTime.Now;
+
+        // Seed products
+        var p1 = new SanPham { Id = 10, TenSP = "Gấu bông", MaSP = "GB001", GiaNhap = 50000m, GiaBan = 100000m, SoLuongTon = 20 };
+        var p2 = new SanPham { Id = 20, TenSP = "Ly sứ", MaSP = "LY002", GiaNhap = 30000m, GiaBan = 60000m, SoLuongTon = 30 };
+        context.SanPhams.AddRange(p1, p2);
+
+        // Seed 2 completed orders and 1 draft order
+        var o1 = new DonHang { Id = 1, TrangThai = TrangThaiDonHang.DaThanhToan, NgayTao = now, TongTienThanhToan = 200000m, NguoiDungId = 1, HinhThucThanhToanId = 1 };
+        o1.ChiTietDonHangs.Add(new ChiTietDonHang { DonHangId = 1, SanPhamId = 10, SoLuong = 2, DonGia = 100000m, ThanhTien = 200000m, SanPham = p1 });
+
+        var o2 = new DonHang { Id = 2, TrangThai = TrangThaiDonHang.DaThanhToan, NgayTao = now, TongTienThanhToan = 120000m, NguoiDungId = 1, HinhThucThanhToanId = 2 };
+        o2.ChiTietDonHangs.Add(new ChiTietDonHang { DonHangId = 2, SanPhamId = 20, SoLuong = 2, DonGia = 60000m, ThanhTien = 120000m, SanPham = p2 });
+
+        var oDraft = new DonHang { Id = 3, TrangThai = TrangThaiDonHang.LuuNhap, NgayTao = now, TongTienThanhToan = 500000m, NguoiDungId = 1, HinhThucThanhToanId = 1 };
+
+        context.DonHangs.AddRange(o1, o2, oDraft);
+        await context.SaveChangesAsync();
+
+        var handler = new GetRevenueReportQueryHandler(context);
+        var report = await handler.Handle(new GetRevenueReportQuery("today"), CancellationToken.None);
+
+        AssertTest(
+            "UC14: GetRevenueReport correctly calculates gross revenue, orders count, and inventory",
+            report.TongDoanhThu == 320000m && report.TongDonHang == 2 && report.TongTonKho == 50,
+            $"TongDoanhThu: {report.TongDoanhThu}, TongDonHang: {report.TongDonHang}, TongTonKho: {report.TongTonKho}"
+        );
+    }
+
+    private static async Task Test_GetTopProducts_ReturnsRankedProducts()
+    {
+        using var context = CreateInMemoryDbContext();
+        var now = DateTime.Now;
+
+        var p1 = new SanPham { TenSP = "Móc khóa", MaSP = "MK01", GiaBan = 20000m, SoLuongTon = 50 };
+        var p2 = new SanPham { TenSP = "Đèn ngủ", MaSP = "DN01", GiaBan = 150000m, SoLuongTon = 10 };
+        context.SanPhams.AddRange(p1, p2);
+        await context.SaveChangesAsync();
+
+        var o = new DonHang { TrangThai = TrangThaiDonHang.DaThanhToan, NgayTao = now, TongTienThanhToan = 340000m, NguoiDungId = 1, HinhThucThanhToanId = 1 };
+        context.DonHangs.Add(o);
+        await context.SaveChangesAsync();
+
+        var ct1 = new ChiTietDonHang { DonHangId = o.Id, SanPhamId = p1.Id, SoLuong = 7, DonGia = 20000m, ThanhTien = 140000m, SanPham = p1 };
+        var ct2 = new ChiTietDonHang { DonHangId = o.Id, SanPhamId = p2.Id, SoLuong = 2, DonGia = 100000m, ThanhTien = 200000m, SanPham = p2 };
+        context.ChiTietDonHangs.AddRange(ct1, ct2);
+        o.ChiTietDonHangs.Add(ct1);
+        o.ChiTietDonHangs.Add(ct2);
+        await context.SaveChangesAsync();
+
+        var handler = new GetTopProductsQueryHandler(context);
+        var result = await handler.Handle(new GetTopProductsQuery(Limit: 5, Period: "today"), CancellationToken.None);
+
+        AssertTest(
+            "UC14: GetTopProducts correctly ranks product by quantity sold",
+            result.Items.Count >= 2 && result.Items[0].SanPhamId == p1.Id && result.Items[0].SoLuongDaBan == 7,
+            $"Top 1 item: ID={result.Items.FirstOrDefault()?.SanPhamId}, Qty={result.Items.FirstOrDefault()?.SoLuongDaBan}"
+        );
+    }
+
+    private static async Task Test_GetShiftsReport_CalculatesCashAndTransferRevenues()
+    {
+        using var context = CreateInMemoryDbContext();
+        var now = DateTime.Now;
+
+        var user = new NguoiDung { TenDangNhap = "staff1", MatKhau = "pass", HoTen = "Trần Thu Hà", VaiTroId = 2 };
+        context.NguoiDungs.Add(user);
+        await context.SaveChangesAsync();
+
+        var shift = new CaLamViec { NguoiDungId = user.Id, ThoiGianMoCa = now.AddHours(-4), TienMatBanGiao = 500000m, TienMatThucTe = 750000m, TrangThai = "DA_CHOT" };
+        context.CaLamViecs.Add(shift);
+        await context.SaveChangesAsync();
+
+        // 1 cash order (250.000) + 1 transfer order (100.000)
+        var oCash = new DonHang { CaLamViecId = shift.Id, TrangThai = TrangThaiDonHang.DaThanhToan, NgayTao = now.AddHours(-2), HinhThucThanhToanId = 1, TongTienThanhToan = 250000m, NguoiDungId = user.Id };
+        var oTransfer = new DonHang { CaLamViecId = shift.Id, TrangThai = TrangThaiDonHang.DaThanhToan, NgayTao = now.AddHours(-1), HinhThucThanhToanId = 2, TongTienThanhToan = 100000m, NguoiDungId = user.Id };
+        context.DonHangs.AddRange(oCash, oTransfer);
+        await context.SaveChangesAsync();
+
+        var handler = new GetShiftsReportQueryHandler(context);
+        var result = await handler.Handle(new GetShiftsReportQuery("today"), CancellationToken.None);
+
+        var shiftItem = result.Items.FirstOrDefault(s => s.CaLamViecId == shift.Id);
+        AssertTest(
+            "UC14: GetShiftsReport accurately computes cash, transfer revenues and discrepancy",
+            shiftItem != null && shiftItem.TongDoanhThuTienMat == 250000m && shiftItem.TongDoanhThuChuyenKhoan == 100000m && shiftItem.ChenhLech == 0m,
+            $"ShiftItem: Cash={shiftItem?.TongDoanhThuTienMat}, Transfer={shiftItem?.TongDoanhThuChuyenKhoan}, Diff={shiftItem?.ChenhLech}"
+        );
+    }
+
+    private static async Task Test_GetCustomerOrders_ReturnsCustomerHistory()
+    {
+        using var context = CreateInMemoryDbContext();
+        var user = new NguoiDung { TenDangNhap = "staff_order", MatKhau = "pass", HoTen = "Nhân viên bán", VaiTroId = 2 };
+        context.NguoiDungs.Add(user);
+        var paymentMethod = new HinhThucThanhToan { Id = 1, TenHinhThuc = "Tiền mặt" };
+        context.HinhThucThanhToans.Add(paymentMethod);
+        var cust = new KhachHang { TenKhachHang = "Nguyễn Ngọc Lan", SoDienThoai = "0901234567", DiemTichLuy = 250 };
+        context.KhachHangs.Add(cust);
+        await context.SaveChangesAsync();
+
+        var o = new DonHang { KhachHangId = cust.Id, TrangThai = TrangThaiDonHang.DaThanhToan, NgayTao = DateTime.Now, TongTienThanhToan = 180000m, NguoiDungId = user.Id, HinhThucThanhToanId = 1 };
+        context.DonHangs.Add(o);
+        await context.SaveChangesAsync();
+
+        var handler = new GetCustomerOrdersQueryHandler(context);
+        var result = await handler.Handle(new GetCustomerOrdersQuery(cust.Id), CancellationToken.None);
+
+        AssertTest(
+            "UC09: GetCustomerOrders returns purchase history for customer",
+            result.IsSuccess && result.Data != null && result.Data.Count == 1 && result.Data[0].Id == o.Id,
+            $"Success: {result.IsSuccess}, Orders count: {result.Data?.Count}"
         );
     }
 }

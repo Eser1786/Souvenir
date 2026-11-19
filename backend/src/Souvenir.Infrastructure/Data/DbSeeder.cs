@@ -198,5 +198,120 @@ public static class DbSeeder
         }
 
         await context.SaveChangesAsync();
+
+        // 6. Seed Lịch sử Ca & Đơn hàng mẫu nếu chưa có dữ liệu đơn hàng (để biểu đồ báo cáo UC14 có dữ liệu ban đầu)
+        if (!await context.DonHangs.AnyAsync())
+        {
+            var staff = await context.NguoiDungs.FirstOrDefaultAsync(u => u.TenDangNhap == "tranthuha")
+                        ?? await context.NguoiDungs.FirstAsync();
+            var customer1 = await context.KhachHangs.FirstOrDefaultAsync(c => c.SoDienThoai == "0901234567")
+                            ?? await context.KhachHangs.FirstAsync();
+            var customer2 = await context.KhachHangs.FirstOrDefaultAsync(c => c.SoDienThoai == "0987654321");
+
+            var spTeddy = await context.SanPhams.FirstOrDefaultAsync(s => s.MaSP == "GB001");
+            var spLySu = await context.SanPhams.FirstOrDefaultAsync(s => s.MaSP == "LY002");
+            var spDenNgu = await context.SanPhams.FirstOrDefaultAsync(s => s.MaSP == "DN003");
+            var spHopQua = await context.SanPhams.FirstOrDefaultAsync(s => s.MaSP == "HQ004");
+            var voucher10 = await context.MaGiamGias.FirstOrDefaultAsync(v => v.MaCode == "QUATANG10");
+
+            // Tạo ca làm việc hôm qua đã chốt
+            var pastShift = new CaLamViec
+            {
+                NguoiDungId = staff.Id,
+                ThoiGianMoCa = DateTime.UtcNow.AddDays(-1).Date.AddHours(8),
+                ThoiGianChotCa = DateTime.UtcNow.AddDays(-1).Date.AddHours(17),
+                TienMatBanGiao = 1000000m,
+                TienMatThucTe = 1530000m,
+                TrangThai = "DA_CHOT"
+            };
+            context.CaLamViecs.Add(pastShift);
+            await context.SaveChangesAsync();
+
+            // Đơn hàng 1 (Hôm qua - Tiền mặt)
+            if (spTeddy != null && spLySu != null)
+            {
+                var don1 = new DonHang
+                {
+                    CaLamViecId = pastShift.Id,
+                    KhachHangId = customer1.Id,
+                    NguoiDungId = staff.Id,
+                    HinhThucThanhToanId = 1, // Tiền mặt
+                    NgayTao = DateTime.UtcNow.AddDays(-1).Date.AddHours(10).AddMinutes(30),
+                    TrangThai = TrangThaiDonHang.DaThanhToan,
+                    MaGiamGiaId = voucher10?.Id,
+                    TongTienThanhToan = 247500m // (180k + 95k) * 0.9 = 247.5k
+                };
+                don1.ChiTietDonHangs.Add(new ChiTietDonHang
+                {
+                    SanPhamId = spTeddy.Id,
+                    SoLuong = 1,
+                    DonGia = spTeddy.GiaBan,
+                    ThanhTien = spTeddy.GiaBan
+                });
+                don1.ChiTietDonHangs.Add(new ChiTietDonHang
+                {
+                    SanPhamId = spLySu.Id,
+                    SoLuong = 1,
+                    DonGia = spLySu.GiaBan,
+                    ThanhTien = spLySu.GiaBan
+                });
+                context.DonHangs.Add(don1);
+            }
+
+            // Đơn hàng 2 (Hôm qua - Chuyển khoản)
+            if (spDenNgu != null && spHopQua != null)
+            {
+                var don2 = new DonHang
+                {
+                    CaLamViecId = pastShift.Id,
+                    KhachHangId = customer2?.Id,
+                    NguoiDungId = staff.Id,
+                    HinhThucThanhToanId = 2, // Chuyển khoản / QR
+                    NgayTao = DateTime.UtcNow.AddDays(-1).Date.AddHours(15).AddMinutes(15),
+                    TrangThai = TrangThaiDonHang.DaThanhToan,
+                    TongTienThanhToan = 265000m // 220k + 45k
+                };
+                don2.ChiTietDonHangs.Add(new ChiTietDonHang
+                {
+                    SanPhamId = spDenNgu.Id,
+                    SoLuong = 1,
+                    DonGia = spDenNgu.GiaBan,
+                    ThanhTien = spDenNgu.GiaBan
+                });
+                don2.ChiTietDonHangs.Add(new ChiTietDonHang
+                {
+                    SanPhamId = spHopQua.Id,
+                    SoLuong = 1,
+                    DonGia = spHopQua.GiaBan,
+                    ThanhTien = spHopQua.GiaBan
+                });
+                context.DonHangs.Add(don2);
+            }
+
+            // Đơn hàng 3 (2 ngày trước - Tiền mặt)
+            if (spTeddy != null)
+            {
+                var don3 = new DonHang
+                {
+                    CaLamViecId = pastShift.Id,
+                    KhachHangId = customer1.Id,
+                    NguoiDungId = staff.Id,
+                    HinhThucThanhToanId = 1,
+                    NgayTao = DateTime.UtcNow.AddDays(-2).Date.AddHours(14).AddMinutes(20),
+                    TrangThai = TrangThaiDonHang.DaThanhToan,
+                    TongTienThanhToan = 360000m // 2 * 180k
+                };
+                don3.ChiTietDonHangs.Add(new ChiTietDonHang
+                {
+                    SanPhamId = spTeddy.Id,
+                    SoLuong = 2,
+                    DonGia = spTeddy.GiaBan,
+                    ThanhTien = spTeddy.GiaBan * 2
+                });
+                context.DonHangs.Add(don3);
+            }
+
+            await context.SaveChangesAsync();
+        }
     }
 }
