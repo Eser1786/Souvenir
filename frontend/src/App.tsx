@@ -59,9 +59,9 @@ export const AppContent: React.FC = () => {
       <Route
         path="/returns"
         element={
-          <ProtectedRoute>
+          <ManagerRoute>
             <ReturnsScreen />
-          </ProtectedRoute>
+          </ManagerRoute>
         }
       />
       <Route
@@ -75,9 +75,9 @@ export const AppContent: React.FC = () => {
       <Route
         path="/inventory/receipts"
         element={
-          <ProtectedRoute>
+          <ManagerRoute>
             <GoodsReceiptScreen />
-          </ProtectedRoute>
+          </ManagerRoute>
         }
       />
       <Route
