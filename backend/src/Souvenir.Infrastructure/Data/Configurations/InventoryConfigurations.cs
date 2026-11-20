@@ -31,7 +31,7 @@ public class PhieuNhapKhoConfiguration : IEntityTypeConfiguration<PhieuNhapKho>
         entity.Property(e => e.NhaCungCapId).HasColumnName("nhacungcapid").IsRequired();
         entity.Property(e => e.NguoiDungId).HasColumnName("nguoidungid").IsRequired();
         entity.Property(e => e.TongTienNhap).HasColumnName("tongtiennhap").HasColumnType("numeric(18,2)").IsRequired();
-        entity.Property(e => e.NgayNhap).HasColumnName("ngaynhap").HasColumnType("timestamp without time zone").IsRequired();
+        entity.Property(e => e.NgayNhap).HasColumnName("ngaynhap").HasColumnType("timestamp with time zone").IsRequired();
 
         entity.HasOne(e => e.NhaCungCap)
             .WithMany(n => n.PhieuNhapKhos)

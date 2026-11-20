@@ -127,7 +127,7 @@ public class CreateDraftOrderCommandHandler : IRequestHandler<CreateDraftOrderCo
             KhachHangId = req.KhachHangId,
             MaGiamGiaId = maGiamGiaId,
             HinhThucThanhToanId = paymentMethodId,
-            NgayTao = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified),
+            NgayTao = DateTime.UtcNow,
             TongTienThanhToan = tongTienThanhToan,
             TrangThai = TrangThaiDonHang.LuuNhap
         };

@@ -138,7 +138,7 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Ord
             KhachHangId = req.KhachHangId,
             NguoiDungId = command.NguoiDungId,
             HinhThucThanhToanId = method.Id,
-            NgayTao = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified),
+            NgayTao = DateTime.UtcNow,
             TrangThai = TrangThaiDonHang.DaThanhToan
         };
 
