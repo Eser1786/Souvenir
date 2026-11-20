@@ -109,7 +109,7 @@ export const ProductManagementScreen: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -153,19 +153,31 @@ export const ProductManagementScreen: React.FC = () => {
     fetchProductList();
   }, []);
 
+  const categoryFilters = useMemo<Array<{ id: number | null; label: string }>>(() => {
+    const categoriesById = new Map<number, string>();
+    for (const product of products) {
+      if (product.danhMucId != null && product.tenDanhMuc.trim()) {
+        categoriesById.set(product.danhMucId, product.tenDanhMuc);
+      }
+    }
+
+    return [
+      { id: null, label: 'Tất cả' },
+      ...Array.from(categoriesById, ([id, label]) => ({ id, label })),
+    ];
+  }, [products]);
+
   // Filter products by category & search term
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      const matchCat =
-        selectedCategory === 'Tất cả' ||
-        p.tenDanhMuc?.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+      const matchCat = selectedCategoryId === null || p.danhMucId === selectedCategoryId;
       const matchSearch =
         !searchTerm.trim() ||
         p.tenSP.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.maSP.toLowerCase().includes(searchTerm.toLowerCase());
       return matchCat && matchSearch;
     });
-  }, [products, selectedCategory, searchTerm]);
+  }, [products, selectedCategoryId, searchTerm]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -365,28 +377,28 @@ export const ProductManagementScreen: React.FC = () => {
                 className="btn-secondary"
                 onClick={() => navigate('/inventory/receipts')}
               >
-                <IconReceipt /> Lập phiếu nhập kho (UC12)
+                <IconReceipt /> Lập phiếu nhập kho
               </button>
               <button
                 type="button"
                 className="btn-primary"
                 onClick={handleOpenCreateModal}
               >
-                <IconPlus /> Thêm sản phẩm mới (UC11)
+                <IconPlus /> Thêm sản phẩm mới 
               </button>
             </div>
           </div>
 
           {/* Category Filter Pills */}
           <div className="category-pills">
-            {CATEGORIES.map((cat) => (
+            {categoryFilters.map((category) => (
               <button
-                key={cat}
+                key={category.id ?? 'all'}
                 type="button"
-                className={`cat-pill ${selectedCategory === cat ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat)}
+                className={`cat-pill ${selectedCategoryId === category.id ? 'active' : ''}`}
+                onClick={() => setSelectedCategoryId(category.id)}
               >
-                {cat}
+                {category.label}
               </button>
             ))}
           </div>

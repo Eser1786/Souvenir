@@ -12,6 +12,7 @@ namespace Souvenir.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ProductsController : ControllerBase
 {
     private readonly ISender _sender;
@@ -25,7 +26,6 @@ public class ProductsController : ControllerBase
     /// Danh sách sản phẩm (hỗ trợ lọc search, category, và includeAllStatus)
     /// </summary>
     [HttpGet]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(List<ProductDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProducts(
         [FromQuery] string? search,
@@ -42,7 +42,6 @@ public class ProductsController : ControllerBase
     /// Chi tiết sản phẩm theo ID
     /// </summary>
     [HttpGet("{id:int}")]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProductById(int id, CancellationToken cancellationToken)
@@ -59,7 +58,6 @@ public class ProductsController : ControllerBase
     /// UC11: Thêm sản phẩm mới (nhận imageUrl, tự động map vào HinhAnh)
     /// </summary>
     [HttpPost]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -85,7 +83,6 @@ public class ProductsController : ControllerBase
     /// UC11: Cập nhật thông tin sản phẩm
     /// </summary>
     [HttpPut("{id:int}")]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -112,7 +109,6 @@ public class ProductsController : ControllerBase
     /// UC11: Xóa sản phẩm / Chuyển sang Ngừng kinh doanh nếu đã phát sinh giao dịch
     /// </summary>
     [HttpDelete("{id:int}")]
-    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteProduct(int id, CancellationToken cancellationToken)

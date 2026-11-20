@@ -11,6 +11,7 @@ namespace Souvenir.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class InventoryController : ControllerBase
 {
     private readonly ISender _sender;
@@ -24,7 +25,6 @@ public class InventoryController : ControllerBase
     /// Lấy danh sách các nhà cung cấp
     /// </summary>
     [HttpGet("suppliers")]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(List<SupplierDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSuppliers(CancellationToken cancellationToken)
     {
@@ -36,7 +36,6 @@ public class InventoryController : ControllerBase
     /// Lấy danh sách các phiếu nhập kho đã lập
     /// </summary>
     [HttpGet("receipts")]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(List<GoodsReceiptDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetGoodsReceipts(CancellationToken cancellationToken)
     {
@@ -48,7 +47,6 @@ public class InventoryController : ControllerBase
     /// UC12: Lập phiếu nhập kho và tự động cộng dồn số lượng tồn kho (soLuongTon)
     /// </summary>
     [HttpPost("receipts")]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(GoodsReceiptDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -62,7 +60,10 @@ public class InventoryController : ControllerBase
         }
 
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-        int userId = 1; // Default Manager
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
         if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out var parsedId))
         {
             userId = parsedId;
