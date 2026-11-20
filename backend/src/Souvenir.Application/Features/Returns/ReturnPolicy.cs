@@ -143,5 +143,5 @@ public static partial class ReturnPolicy
     }
 
     /// <summary>Giờ hiện tại theo cùng quy ước với DonHang.NgayTao (giờ địa phương, Kind = Unspecified).</summary>
-    public static DateTime Now() => DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
+    public static DateTime Now() => DateTime.UtcNow;
 }

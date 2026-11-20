@@ -21,8 +21,11 @@ public interface IApplicationDbContext
     DbSet<ChamCong> ChamCongs { get; }
     DbSet<PhieuTraHang> PhieuTraHangs { get; }
     DbSet<ChiTietTraHang> ChiTietTraHangs { get; }
+    DbSet<NhaCungCap> NhaCungCaps { get; }
+    DbSet<PhieuNhapKho> PhieuNhapKhos { get; }
+    DbSet<ChiTietNhapKho> ChiTietNhapKhos { get; }
 
-    /// <summary>Dùng để mở transaction (UC07 tạo đơn + trừ kho).</summary>
+    /// <summary>Dùng để mở transaction (UC07 tạo đơn + trừ kho, UC12 nhập kho + cộng kho).</summary>
     DatabaseFacade Database { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

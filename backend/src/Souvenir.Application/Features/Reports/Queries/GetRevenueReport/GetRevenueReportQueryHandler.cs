@@ -26,8 +26,8 @@ public class GetRevenueReportQueryHandler : IRequestHandler<GetRevenueReportQuer
         var (fromDate, toDate, periodName) = ResolveDateRange(request.Period, request.FromDate, request.ToDate, now);
 
         // Normalize DateTimeKind for Postgres
-        var fromUtc = DateTime.SpecifyKind(fromDate, DateTimeKind.Unspecified);
-        var toUtc = DateTime.SpecifyKind(toDate, DateTimeKind.Unspecified);
+        var fromUtc = DateTime.UtcNow;
+        var toUtc = DateTime.UtcNow;
 
         // Query completed orders
         var completedOrders = await _context.DonHangs

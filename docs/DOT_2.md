@@ -27,8 +27,8 @@
 
 #### 👤 Khang: Kiểm chứng liên thông Kho – POS
 * Phối hợp với Tâm & Đạt test thực tế sau khi hoàn thành `UC11`, `UC12`:
-  - [ ] Tạo phiếu nhập thêm hàng ở trang Kho (`UC12`) $\rightarrow$ màn hình POS lập tức cập nhật tăng tồn kho.
-  - [ ] Bán hàng trên POS $\rightarrow$ quay lại trang Quản lý kho thấy tồn kho giảm đúng số lượng.
+  - [x] Tạo phiếu nhập thêm hàng ở trang Kho (`UC12`) $\rightarrow$ màn hình POS lập tức cập nhật tăng tồn kho.
+  - [x] Bán hàng trên POS $\rightarrow$ quay lại trang Quản lý kho thấy tồn kho giảm đúng số lượng.
 
 #### 👤 Hiệp : Điều phối & Review
 * [ ] Ngồi cắn hạt dưa

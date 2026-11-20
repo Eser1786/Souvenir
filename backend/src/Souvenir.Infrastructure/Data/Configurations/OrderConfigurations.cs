@@ -31,7 +31,7 @@ public class DonHangConfiguration : IEntityTypeConfiguration<DonHang>
         entity.Property(e => e.NguoiDungId).HasColumnName("nguoidungid").IsRequired();
         entity.Property(e => e.MaGiamGiaId).HasColumnName("magiamgiaid");
         entity.Property(e => e.HinhThucThanhToanId).HasColumnName("hinhthucthanhtoanid").IsRequired();
-        entity.Property(e => e.NgayTao).HasColumnName("ngaytao").HasColumnType("timestamp without time zone").IsRequired();
+        entity.Property(e => e.NgayTao).HasColumnName("ngaytao").HasColumnType("timestamp with time zone").IsRequired();
         entity.Property(e => e.TongTienThanhToan).HasColumnName("tongtienthanhtoan").HasColumnType("numeric(18,2)").IsRequired();
         entity.Property(e => e.TrangThai).HasColumnName("trangthai").HasMaxLength(50).HasDefaultValue(TrangThaiDonHang.DangLapDon).IsRequired();
 
