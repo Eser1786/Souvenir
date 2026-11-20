@@ -490,8 +490,9 @@
 .svg-chart-container svg {
   display: block;
   width: 100%;
-  min-width: 600px;
-  height: 280px;
+  min-width: 640px;
+  height: auto;
+  max-height: 300px;
 }
 
 .chart-tooltip-hover {

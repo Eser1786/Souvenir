@@ -100,6 +100,20 @@ const CATEGORIES = [
   'Thú bông',
 ];
 
+const normalizeCategoryKey = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .trim();
+
+const resolveCategoryOption = (raw?: string): string => {
+  if (!raw) return CATEGORIES[1];
+  const key = normalizeCategoryKey(raw);
+  return CATEGORIES.find((c) => c !== 'Tất cả' && normalizeCategoryKey(c) === key) || CATEGORIES[1];
+};
+
 const UNITS = ['Cái', 'Hộp', 'Bộ', 'Con', 'Chiếc', 'Quyển', 'Túi', 'Tấm'];
 
 export const ProductManagementScreen: React.FC = () => {
@@ -208,7 +222,7 @@ export const ProductManagementScreen: React.FC = () => {
     setCurrentId(p.id);
     setFormMaSP(p.maSP);
     setFormTenSP(p.tenSP);
-    setFormDanhMuc(p.tenDanhMuc || CATEGORIES[1]);
+    setFormDanhMuc(resolveCategoryOption(p.tenDanhMuc));
     setFormDonVi(p.tenDonVi || UNITS[0]);
     setFormGiaNhap(p.giaNhap || 0);
     setFormGiaBan(p.giaBan || 0);
@@ -303,6 +317,13 @@ export const ProductManagementScreen: React.FC = () => {
             <button type="button" className="nav-pill-btn" onClick={() => navigate('/inventory/receipts')}>
               <IconReceipt /> Nhập kho
             </button>
+            {(user?.vaiTro?.toLowerCase().includes('quản lý') ||
+              user?.vaiTro?.toLowerCase().includes('quanly') ||
+              user?.vaiTro?.toLowerCase().includes('admin')) && (
+              <button type="button" className="nav-pill-btn" onClick={() => navigate('/inventory/audits')}>
+                Kiểm kê kho
+              </button>
+            )}
             <button type="button" className="nav-pill-btn" onClick={() => navigate('/customers')}>
               Khách hàng
             </button>
@@ -638,7 +659,7 @@ export const ProductManagementScreen: React.FC = () => {
                 <div className="form-group">
                   <label className="form-label">Đường dẫn ảnh sản phẩm (Paste URL ảnh)</label>
                   <input
-                    type="url"
+                    type="text"
                     className="form-input"
                     placeholder="https://images.unsplash.com/... hoặc /gift-showcase.png"
                     value={formImageUrl}
