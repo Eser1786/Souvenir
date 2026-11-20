@@ -866,10 +866,11 @@
   background-color: #FFFFFF;
   width: 100%;
   max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(66, 50, 41, 0.15);
   border: 1px solid #E8DFD5;
-  overflow: hidden;
   animation: modalSlideIn 0.25s ease-out;
 }
 

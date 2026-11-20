@@ -218,19 +218,32 @@ export const ReportDashboardScreen: React.FC = () => {
   // Calculate SVG Chart Dimensions & Coordinates
   const timeline = revenueData?.timeline || [];
   const maxRevenue = Math.max(1, ...timeline.map((p) => p.doanhThu));
-  // Round up max for nice axis ticks
-  const chartHeight = 220;
-  const chartWidth = 760;
-  const paddingLeft = 60;
-  const paddingRight = 20;
-  const paddingTop = 20;
+  const chartHeight = 280;
+  const chartWidth = 960;
+  const paddingLeft = 64;
+  const paddingRight = 24;
+  const paddingTop = 24;
   const paddingBottom = 40;
   const innerWidth = chartWidth - paddingLeft - paddingRight;
   const innerHeight = chartHeight - paddingTop - paddingBottom;
 
   const pointsCount = timeline.length;
-  const stepX = pointsCount > 1 ? innerWidth / (pointsCount - 1) : innerWidth;
-  const barWidth = Math.max(8, Math.min(36, (innerWidth / (pointsCount || 1)) * 0.55));
+  const slotWidth = innerWidth / Math.max(1, pointsCount);
+  const getPointX = (idx: number) => paddingLeft + slotWidth * (idx + 0.5);
+  const barWidth = Math.max(8, Math.min(40, slotWidth * 0.6));
+
+  // Automatically thin X-axis labels when there are many days so labels never overlap
+  const maxVisibleLabels = Math.max(2, Math.floor(innerWidth / 58));
+  const labelStep = pointsCount > maxVisibleLabels ? Math.ceil(pointsCount / maxVisibleLabels) : 1;
+  const shouldShowXAxisLabel = (idx: number, isHovered: boolean) => {
+    if (isHovered) return true;
+    if (labelStep === 1) return true;
+    if (hoveredPoint !== null && Math.abs(idx - hoveredPoint) < labelStep) return false;
+    if (idx === pointsCount - 1) return true;
+    if (idx % labelStep !== 0) return false;
+    // Avoid colliding with the always-shown final label
+    return pointsCount - 1 - idx >= Math.ceil(labelStep * 0.6);
+  };
 
   // Top products donut slices colors
   const donutColors = ['#C8A27A', '#3498DB', '#2ECC71', '#E67E22', '#9B59B6'];
@@ -547,7 +560,7 @@ export const ReportDashboardScreen: React.FC = () => {
               </div>
             ) : (
               <div className="svg-chart-container">
-                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
+                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
                   <defs>
                     <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#C8A27A" stopOpacity="0.95" />
@@ -575,10 +588,10 @@ export const ReportDashboardScreen: React.FC = () => {
                           strokeWidth="1"
                         />
                         <text
-                          x={paddingLeft - 8}
+                          x={paddingLeft - 10}
                           y={y + 4}
                           textAnchor="end"
-                          fontSize="10"
+                          fontSize="11"
                           fill="#8C7E74"
                         >
                           {formatShortCurrency(val)}
@@ -590,13 +603,12 @@ export const ReportDashboardScreen: React.FC = () => {
                   {/* Bar Chart rendering */}
                   {chartType === 'bar' &&
                     timeline.map((p, idx) => {
-                      const x =
-                        pointsCount === 1
-                          ? paddingLeft + innerWidth / 2 - barWidth / 2
-                          : paddingLeft + idx * stepX - barWidth / 2;
+                      const centerX = getPointX(idx);
+                      const x = centerX - barWidth / 2;
                       const barH = (p.doanhThu / maxRevenue) * innerHeight;
                       const y = paddingTop + innerHeight - barH;
                       const isHovered = hoveredPoint === idx;
+                      const showLabel = shouldShowXAxisLabel(idx, isHovered);
 
                       return (
                         <g
@@ -605,6 +617,13 @@ export const ReportDashboardScreen: React.FC = () => {
                           onMouseLeave={() => setHoveredPoint(null)}
                           style={{ cursor: 'pointer' }}
                         >
+                          <rect
+                            x={paddingLeft + idx * slotWidth}
+                            y={paddingTop}
+                            width={slotWidth}
+                            height={innerHeight}
+                            fill="transparent"
+                          />
                           <rect
                             x={x}
                             y={y}
@@ -617,16 +636,18 @@ export const ReportDashboardScreen: React.FC = () => {
                             strokeWidth="1.5"
                           />
                           {/* Label on X Axis */}
-                          <text
-                            x={x + barWidth / 2}
-                            y={chartHeight - 12}
-                            textAnchor="middle"
-                            fontSize="10"
-                            fontWeight={isHovered ? '700' : '500'}
-                            fill={isHovered ? '#2B2523' : '#8C7E74'}
-                          >
-                            {p.label}
-                          </text>
+                          {showLabel && (
+                            <text
+                              x={centerX}
+                              y={chartHeight - 12}
+                              textAnchor="middle"
+                              fontSize="11"
+                              fontWeight={isHovered ? '700' : '500'}
+                              fill={isHovered ? '#2B2523' : '#8C7E74'}
+                            >
+                              {p.label}
+                            </text>
+                          )}
                         </g>
                       );
                     })}
@@ -636,13 +657,13 @@ export const ReportDashboardScreen: React.FC = () => {
                     <>
                       {/* Area Fill */}
                       <path
-                        d={`M ${paddingLeft} ${paddingTop + innerHeight} ${timeline
+                        d={`M ${getPointX(0)} ${paddingTop + innerHeight} ${timeline
                           .map((p, idx) => {
-                            const x = paddingLeft + idx * stepX;
+                            const x = getPointX(idx);
                             const y = paddingTop + innerHeight - (p.doanhThu / maxRevenue) * innerHeight;
                             return `L ${x} ${y}`;
                           })
-                          .join(' ')} L ${paddingLeft + (pointsCount - 1) * stepX} ${
+                          .join(' ')} L ${getPointX(pointsCount - 1)} ${
                           paddingTop + innerHeight
                         } Z`}
                         fill="url(#areaGradient)"
@@ -652,7 +673,7 @@ export const ReportDashboardScreen: React.FC = () => {
                       <path
                         d={timeline
                           .map((p, idx) => {
-                            const x = paddingLeft + idx * stepX;
+                            const x = getPointX(idx);
                             const y = paddingTop + innerHeight - (p.doanhThu / maxRevenue) * innerHeight;
                             return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
                           })
@@ -666,9 +687,10 @@ export const ReportDashboardScreen: React.FC = () => {
 
                       {/* Data Dots */}
                       {timeline.map((p, idx) => {
-                        const x = paddingLeft + idx * stepX;
+                        const x = getPointX(idx);
                         const y = paddingTop + innerHeight - (p.doanhThu / maxRevenue) * innerHeight;
                         const isHovered = hoveredPoint === idx;
+                        const showLabel = shouldShowXAxisLabel(idx, isHovered);
 
                         return (
                           <g
@@ -677,6 +699,13 @@ export const ReportDashboardScreen: React.FC = () => {
                             onMouseLeave={() => setHoveredPoint(null)}
                             style={{ cursor: 'pointer' }}
                           >
+                            <rect
+                              x={paddingLeft + idx * slotWidth}
+                              y={paddingTop}
+                              width={slotWidth}
+                              height={innerHeight}
+                              fill="transparent"
+                            />
                             <circle
                               cx={x}
                               cy={y}
@@ -685,16 +714,18 @@ export const ReportDashboardScreen: React.FC = () => {
                               stroke="#C8A27A"
                               strokeWidth={isHovered ? 3 : 2}
                             />
-                            <text
-                              x={x}
-                              y={chartHeight - 12}
-                              textAnchor="middle"
-                              fontSize="10"
-                              fontWeight={isHovered ? '700' : '500'}
-                              fill={isHovered ? '#2B2523' : '#8C7E74'}
-                            >
-                              {p.label}
-                            </text>
+                            {showLabel && (
+                              <text
+                                x={x}
+                                y={chartHeight - 12}
+                                textAnchor="middle"
+                                fontSize="11"
+                                fontWeight={isHovered ? '700' : '500'}
+                                fill={isHovered ? '#2B2523' : '#8C7E74'}
+                              >
+                                {p.label}
+                              </text>
+                            )}
                           </g>
                         );
                       })}
@@ -706,13 +737,10 @@ export const ReportDashboardScreen: React.FC = () => {
                     <g className="chart-tooltip-hover">
                       {(() => {
                         const p = timeline[hoveredPoint];
-                        const x =
-                          pointsCount === 1
-                            ? paddingLeft + innerWidth / 2
-                            : paddingLeft + hoveredPoint * stepX;
-                        const tooltipX = Math.min(chartWidth - 110, Math.max(70, x));
+                        const x = getPointX(hoveredPoint);
+                        const tooltipX = Math.min(chartWidth - 80, Math.max(80, x));
                         const y =
-                          paddingTop + innerHeight - (p.doanhThu / maxRevenue) * innerHeight - 35;
+                          paddingTop + innerHeight - (p.doanhThu / maxRevenue) * innerHeight - 52;
 
                         return (
                           <g>

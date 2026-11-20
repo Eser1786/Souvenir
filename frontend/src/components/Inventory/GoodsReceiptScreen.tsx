@@ -287,6 +287,13 @@ export const GoodsReceiptScreen: React.FC = () => {
             <button type="button" className="nav-pill-btn active">
               Phiếu nhập kho 
             </button>
+            {(user?.vaiTro?.toLowerCase().includes('quản lý') ||
+              user?.vaiTro?.toLowerCase().includes('quanly') ||
+              user?.vaiTro?.toLowerCase().includes('admin')) && (
+              <button type="button" className="nav-pill-btn" onClick={() => navigate('/inventory/audits')}>
+                Kiểm kê kho
+              </button>
+            )}
             <button type="button" className="nav-pill-btn" onClick={() => navigate('/pos')}>
               Bán hàng (POS)
             </button>
