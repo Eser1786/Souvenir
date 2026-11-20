@@ -7,6 +7,7 @@ using Souvenir.Application.Features.Products.Commands.DeleteProduct;
 using Souvenir.Application.Features.Products.Commands.UpdateProduct;
 using Souvenir.Application.Features.Products.Queries.GetProductById;
 using Souvenir.Application.Features.Products.Queries.GetProducts;
+using Souvenir.Domain.Constants;
 
 namespace Souvenir.Api.Controllers;
 
@@ -58,6 +59,7 @@ public class ProductsController : ControllerBase
     /// UC11: Thêm sản phẩm mới (nhận imageUrl, tự động map vào HinhAnh)
     /// </summary>
     [HttpPost]
+    [Authorize(Roles = VaiTroConstants.QuanLy)]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -83,6 +85,7 @@ public class ProductsController : ControllerBase
     /// UC11: Cập nhật thông tin sản phẩm
     /// </summary>
     [HttpPut("{id:int}")]
+    [Authorize(Roles = VaiTroConstants.QuanLy)]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -109,6 +112,7 @@ public class ProductsController : ControllerBase
     /// UC11: Xóa sản phẩm / Chuyển sang Ngừng kinh doanh nếu đã phát sinh giao dịch
     /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = VaiTroConstants.QuanLy)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteProduct(int id, CancellationToken cancellationToken)
