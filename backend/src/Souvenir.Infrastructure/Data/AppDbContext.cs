@@ -30,6 +30,8 @@ public class AppDbContext : DbContext, IApplicationDbContext
     public DbSet<NhaCungCap> NhaCungCaps => Set<NhaCungCap>();
     public DbSet<PhieuNhapKho> PhieuNhapKhos => Set<PhieuNhapKho>();
     public DbSet<ChiTietNhapKho> ChiTietNhapKhos => Set<ChiTietNhapKho>();
+    public DbSet<PhieuKiemKe> PhieuKiemKes => Set<PhieuKiemKe>();
+    public DbSet<ChiTietKiemKe> ChiTietKiemKes => Set<ChiTietKiemKe>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,6 +52,10 @@ public class AppDbContext : DbContext, IApplicationDbContext
         modelBuilder.ApplyConfiguration(new NhaCungCapConfiguration());
         modelBuilder.ApplyConfiguration(new PhieuNhapKhoConfiguration());
         modelBuilder.ApplyConfiguration(new ChiTietNhapKhoConfiguration());
+
+        // UC13 - Kiểm kê kho
+        modelBuilder.ApplyConfiguration(new PhieuKiemKeConfiguration());
+        modelBuilder.ApplyConfiguration(new ChiTietKiemKeConfiguration());
 
         modelBuilder.Entity<VaiTro>(entity =>
         {

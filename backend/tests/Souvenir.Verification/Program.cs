@@ -18,6 +18,9 @@ using Souvenir.Application.Features.Reports.Queries.GetRevenueReport;
 using Souvenir.Application.Features.Reports.Queries.GetTopProducts;
 using Souvenir.Application.Features.Reports.Queries.GetShiftsReport;
 using Souvenir.Application.Features.Customers.Queries.GetCustomerOrders;
+using Souvenir.Application.DTOs.StockAudits;
+using Souvenir.Application.Features.StockAudits.Commands.BalanceStockAudit;
+using Souvenir.Application.Features.StockAudits.Commands.SaveDraftStockAudit;
 using Souvenir.Domain.Constants;
 using Souvenir.Domain.Entities;
 using Souvenir.Infrastructure.Data;
@@ -73,6 +76,11 @@ class Program
 
         Console.WriteLine("\n--- VERIFICATION SUITE FOR UC09 (LỊCH SỬ ĐƠN HÀNG KHÁCH) ---");
         await Test_GetCustomerOrders_ReturnsCustomerHistory();
+
+        Console.WriteLine("\n--- VERIFICATION SUITE FOR UC13 (KIỂM KÊ KHO) ---");
+        await Test_StockAudit_SaveDraft_DoesNotChangeStock();
+        await Test_StockAudit_Balance_MissingReason_Returns400AndKeepsStock();
+        await Test_StockAudit_Balance_FromDraft_UpdatesStockAndLocksAudit();
 
         Console.WriteLine("\n===============================================================");
         Console.WriteLine($"   TEST RESULTS: {_passedTests} PASSED, {_failedTests} FAILED");
@@ -630,6 +638,128 @@ class Program
             "UC09: GetCustomerOrders returns purchase history for customer",
             result.IsSuccess && result.Data != null && result.Data.Count == 1 && result.Data[0].Id == o.Id,
             $"Success: {result.IsSuccess}, Orders count: {result.Data?.Count}"
+        );
+    }
+
+    private static async Task<(NguoiDung Manager, SanPham Product1, SanPham Product2)> SeedStockAuditFixturesAsync(AppDbContext context)
+    {
+        var manager = new NguoiDung { TenDangNhap = "manager_audit", MatKhau = "hash", HoTen = "Quản Lý Kho", SoDienThoai = "0909888999", VaiTroId = 1 };
+        var dm = new DanhMucSanPham { TenDanhMuc = "Thú bông", TrangThai = "HoatDong" };
+        var dvt = new DonViTinh { TenDonVi = "Cái" };
+        context.NguoiDungs.Add(manager);
+        context.DanhMucSanPhams.Add(dm);
+        context.DonViTinhs.Add(dvt);
+        await context.SaveChangesAsync();
+
+        var p1 = new SanPham { MaSP = "GB001", TenSP = "Gấu bông Teddy", DanhMucId = dm.Id, DonViTinhId = dvt.Id, GiaNhap = 90000m, GiaBan = 180000m, SoLuongTon = 24 };
+        var p2 = new SanPham { MaSP = "LY002", TenSP = "Ly sứ tặng Ba", DanhMucId = dm.Id, DonViTinhId = dvt.Id, GiaNhap = 45000m, GiaBan = 95000m, SoLuongTon = 36 };
+        context.SanPhams.AddRange(p1, p2);
+        await context.SaveChangesAsync();
+
+        return (manager, p1, p2);
+    }
+
+    private static async Task Test_StockAudit_SaveDraft_DoesNotChangeStock()
+    {
+        using var context = CreateInMemoryDbContext();
+        var (manager, p1, p2) = await SeedStockAuditFixturesAsync(context);
+
+        var handler = new SaveDraftStockAuditCommandHandler(context);
+        var res = await handler.Handle(new SaveDraftStockAuditCommand(manager.Id, new SaveStockAuditRequest
+        {
+            Items =
+            [
+                new StockAuditItemRequest { SanPhamId = p1.Id, SoTonThucTe = 21, LyDoChenhLech = "Thiếu 3 gấu" },
+                new StockAuditItemRequest { SanPhamId = p2.Id, SoTonThucTe = 36 }
+            ]
+        }), CancellationToken.None);
+
+        var p1After = await context.SanPhams.FindAsync(p1.Id);
+        var p2After = await context.SanPhams.FindAsync(p2.Id);
+
+        AssertTest(
+            "UC13: SaveDraft saves DangKiemKe with accurate diff and does NOT change stock",
+            res.IsSuccess &&
+            res.StatusCode == 201 &&
+            res.Data?.TrangThai == TrangThaiPhieuKiemKe.DangKiemKe &&
+            res.Data.Items.First(i => i.SanPhamId == p1.Id).SoLuongChenhLech == -3 &&
+            p1After?.SoLuongTon == 24 &&
+            p2After?.SoLuongTon == 36,
+            $"Success={res.IsSuccess}, Status={res.StatusCode}, State={res.Data?.TrangThai}, P1Stock={p1After?.SoLuongTon}"
+        );
+    }
+
+    private static async Task Test_StockAudit_Balance_MissingReason_Returns400AndKeepsStock()
+    {
+        using var context = CreateInMemoryDbContext();
+        var (manager, p1, _) = await SeedStockAuditFixturesAsync(context);
+
+        var handler = new BalanceStockAuditCommandHandler(context);
+        var res = await handler.Handle(new BalanceStockAuditCommand(manager.Id, new SaveStockAuditRequest
+        {
+            Items =
+            [
+                new StockAuditItemRequest { SanPhamId = p1.Id, SoTonThucTe = 20, LyDoChenhLech = "   " }
+            ]
+        }), CancellationToken.None);
+
+        var p1After = await context.SanPhams.FindAsync(p1.Id);
+        var auditCount = await context.PhieuKiemKes.CountAsync();
+
+        AssertTest(
+            "UC13: Balance fails with 400 when diff != 0 and reason is missing, keeping stock intact",
+            !res.IsSuccess && res.StatusCode == 400 && p1After?.SoLuongTon == 24 && auditCount == 0,
+            $"Success={res.IsSuccess}, Status={res.StatusCode}, P1Stock={p1After?.SoLuongTon}, AuditCount={auditCount}"
+        );
+    }
+
+    private static async Task Test_StockAudit_Balance_FromDraft_UpdatesStockAndLocksAudit()
+    {
+        using var context = CreateInMemoryDbContext();
+        var (manager, p1, p2) = await SeedStockAuditFixturesAsync(context);
+
+        var draftHandler = new SaveDraftStockAuditCommandHandler(context);
+        var draftRes = await draftHandler.Handle(new SaveDraftStockAuditCommand(manager.Id, new SaveStockAuditRequest
+        {
+            Items =
+            [
+                new StockAuditItemRequest { SanPhamId = p1.Id, SoTonThucTe = 22 },
+                new StockAuditItemRequest { SanPhamId = p2.Id, SoTonThucTe = 38 }
+            ]
+        }), CancellationToken.None);
+
+        var balanceHandler = new BalanceStockAuditCommandHandler(context);
+        var balRes = await balanceHandler.Handle(new BalanceStockAuditCommand(manager.Id, new SaveStockAuditRequest
+        {
+            Id = draftRes.Data!.Id,
+            Items =
+            [
+                new StockAuditItemRequest { SanPhamId = p1.Id, SoTonThucTe = 22, LyDoChenhLech = "Hao hụt trưng bày" },
+                new StockAuditItemRequest { SanPhamId = p2.Id, SoTonThucTe = 38, LyDoChenhLech = "Kiểm sót đợt nhập trước" }
+            ]
+        }), CancellationToken.None);
+
+        var relockRes = await balanceHandler.Handle(new BalanceStockAuditCommand(manager.Id, new SaveStockAuditRequest
+        {
+            Id = draftRes.Data.Id,
+            Items =
+            [
+                new StockAuditItemRequest { SanPhamId = p1.Id, SoTonThucTe = 24, LyDoChenhLech = "Sửa lại" }
+            ]
+        }), CancellationToken.None);
+
+        var p1After = await context.SanPhams.FindAsync(p1.Id);
+        var p2After = await context.SanPhams.FindAsync(p2.Id);
+
+        AssertTest(
+            "UC13: Balance from draft updates stock to actual counts, sets DaCanBang, and locks against edits (409)",
+            balRes.IsSuccess &&
+            balRes.Data?.TrangThai == TrangThaiPhieuKiemKe.DaCanBang &&
+            p1After?.SoLuongTon == 22 &&
+            p2After?.SoLuongTon == 38 &&
+            !relockRes.IsSuccess &&
+            relockRes.StatusCode == 409,
+            $"BalSuccess={balRes.IsSuccess}, State={balRes.Data?.TrangThai}, P1={p1After?.SoLuongTon}, P2={p2After?.SoLuongTon}, RelockCode={relockRes.StatusCode}"
         );
     }
 }

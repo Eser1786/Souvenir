@@ -73,4 +73,11 @@ public class AuthController : ControllerBase
 
         return Ok(user);
     }
+
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult Logout()
+    {
+        return Ok(new { message = "Đăng xuất thành công." });
+    }
 }

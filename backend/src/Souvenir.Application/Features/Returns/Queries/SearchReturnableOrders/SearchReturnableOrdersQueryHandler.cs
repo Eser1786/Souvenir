@@ -43,12 +43,12 @@ public class SearchReturnableOrdersQueryHandler : IRequestHandler<SearchReturnab
 
         if (request.TuNgay.HasValue)
         {
-            var from = request.TuNgay.Value.Date;
+            var from = DateTime.SpecifyKind(request.TuNgay.Value.Date, DateTimeKind.Local).ToUniversalTime();
             query = query.Where(d => d.NgayTao >= from);
         }
         if (request.DenNgay.HasValue)
         {
-            var to = request.DenNgay.Value.Date.AddDays(1);
+            var to = DateTime.SpecifyKind(request.DenNgay.Value.Date.AddDays(1), DateTimeKind.Local).ToUniversalTime();
             query = query.Where(d => d.NgayTao < to);
         }
 
