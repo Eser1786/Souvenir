@@ -285,7 +285,7 @@ export const GoodsReceiptScreen: React.FC = () => {
               <IconArrowLeft /> Quản lý sản phẩm
             </button>
             <button type="button" className="nav-pill-btn active">
-              Phiếu nhập kho (UC12)
+              Phiếu nhập kho 
             </button>
             <button type="button" className="nav-pill-btn" onClick={() => navigate('/pos')}>
               Bán hàng (POS)
@@ -353,7 +353,7 @@ export const GoodsReceiptScreen: React.FC = () => {
                     style={{ fontSize: '11px', padding: '4px 12px', borderColor: '#C8A27A', color: '#A67C52' }}
                     onClick={handleAddNewCustomProductLine}
                   >
-                    <IconPlus /> Tạo nhanh SP mới (Nhánh 2a)
+                    <IconPlus /> Tạo nhanh SP mới 
                   </button>
                 </div>
               </div>

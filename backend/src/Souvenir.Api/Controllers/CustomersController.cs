@@ -13,6 +13,7 @@ namespace Souvenir.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CustomersController : ControllerBase
 {
     private readonly ISender _sender;
@@ -26,7 +27,6 @@ public class CustomersController : ControllerBase
     /// Tra cứu danh sách khách hàng hoặc tìm kiếm theo Số điện thoại / Họ tên
     /// </summary>
     [HttpGet]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(List<CustomerDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCustomers(
         [FromQuery] string? search,
@@ -42,7 +42,6 @@ public class CustomersController : ControllerBase
     /// Lấy chi tiết hồ sơ khách hàng theo ID
     /// </summary>
     [HttpGet("{id:int}")]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCustomerById(int id, CancellationToken cancellationToken)
@@ -60,7 +59,6 @@ public class CustomersController : ControllerBase
     /// Lấy danh sách lịch sử đơn hàng của một khách hàng (UC09)
     /// </summary>
     [HttpGet("{id:int}/orders")]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(List<CustomerOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCustomerOrders(int id, CancellationToken cancellationToken)
@@ -78,7 +76,6 @@ public class CustomersController : ControllerBase
     /// Tạo mới hồ sơ khách hàng thân thiết
     /// </summary>
     [HttpPost]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -107,7 +104,6 @@ public class CustomersController : ControllerBase
     /// Cập nhật thông tin và điểm tích lũy của khách hàng
     /// </summary>
     [HttpPut("{id:int}")]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -138,7 +134,6 @@ public class CustomersController : ControllerBase
     /// Xóa hồ sơ khách hàng
     /// </summary>
     [HttpDelete("{id:int}")]
-    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
