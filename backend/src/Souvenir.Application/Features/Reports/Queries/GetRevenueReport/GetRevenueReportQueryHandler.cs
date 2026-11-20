@@ -25,9 +25,11 @@ public class GetRevenueReportQueryHandler : IRequestHandler<GetRevenueReportQuer
         var now = DateTime.Now;
         var (fromDate, toDate, periodName) = ResolveDateRange(request.Period, request.FromDate, request.ToDate, now);
 
-        // Normalize DateTimeKind for Postgres
-        var fromUtc = DateTime.UtcNow;
-        var toUtc = DateTime.UtcNow;
+        // Normalize DateTimeKind for Postgres: TIMESTAMPTZ requires UTC, TIMESTAMP requires Unspecified
+        var fromUtc = DateTime.SpecifyKind(fromDate, DateTimeKind.Local).ToUniversalTime();
+        var toUtc = DateTime.SpecifyKind(toDate, DateTimeKind.Local).ToUniversalTime();
+        var fromLocal = DateTime.SpecifyKind(fromDate, DateTimeKind.Unspecified);
+        var toLocal = DateTime.SpecifyKind(toDate, DateTimeKind.Unspecified);
 
         // Query completed orders
         var completedOrders = await _context.DonHangs
@@ -44,7 +46,7 @@ public class GetRevenueReportQueryHandler : IRequestHandler<GetRevenueReportQuer
         {
             tongTienHoan = await _context.PhieuTraHangs
                 .AsNoTracking()
-                .Where(p => p.NgayTra >= fromUtc && p.NgayTra <= toUtc)
+                .Where(p => p.NgayTra >= fromLocal && p.NgayTra <= toLocal)
                 .SumAsync(p => p.TongTienHoan, cancellationToken);
         }
         catch
@@ -143,6 +145,9 @@ public class GetRevenueReportQueryHandler : IRequestHandler<GetRevenueReportQuer
         }
     }
 
+    private static DateTime ToLocalDisplayTime(DateTime dt) =>
+        dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
+
     private static List<RevenueTimelinePointDto> BuildTimeline(
         List<DonHang> orders, DateTime fromDate, DateTime toDate, string periodName)
     {
@@ -157,7 +162,11 @@ public class GetRevenueReportQueryHandler : IRequestHandler<GetRevenueReportQuer
                 var blockStart = fromDate.Date.AddHours(h);
                 var blockEnd = blockStart.AddHours(2);
                 var matching = orders
-                    .Where(o => o.NgayTao >= blockStart && o.NgayTao < blockEnd)
+                    .Where(o =>
+                    {
+                        var t = ToLocalDisplayTime(o.NgayTao);
+                        return t >= blockStart && t < blockEnd;
+                    })
                     .ToList();
 
                 result.Add(new RevenueTimelinePointDto
@@ -177,7 +186,11 @@ public class GetRevenueReportQueryHandler : IRequestHandler<GetRevenueReportQuer
             {
                 var nextDay = d.AddDays(1);
                 var matching = orders
-                    .Where(o => o.NgayTao >= d && o.NgayTao < nextDay)
+                    .Where(o =>
+                    {
+                        var t = ToLocalDisplayTime(o.NgayTao);
+                        return t >= d && t < nextDay;
+                    })
                     .ToList();
 
                 result.Add(new RevenueTimelinePointDto
@@ -200,7 +213,11 @@ public class GetRevenueReportQueryHandler : IRequestHandler<GetRevenueReportQuer
             {
                 var nextMonth = cur.AddMonths(1);
                 var matching = orders
-                    .Where(o => o.NgayTao >= cur && o.NgayTao < nextMonth)
+                    .Where(o =>
+                    {
+                        var t = ToLocalDisplayTime(o.NgayTao);
+                        return t >= cur && t < nextMonth;
+                    })
                     .ToList();
 
                 result.Add(new RevenueTimelinePointDto
