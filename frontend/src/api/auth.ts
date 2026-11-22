@@ -20,6 +20,7 @@ export interface LoginResponse {
   tenDangNhap?: string;
   message?: string;
   isLocked?: boolean;
+  lockoutMinutes?: number;
   remainingAttempts?: number;
 }
 

@@ -24,6 +24,8 @@ INSERT INTO tham_so (tenThamSo, kieuDuLieu, giaTri, moTa)
 VALUES
     ('SoLanDangNhapSaiToiDa', 'int', '5',
      'So lan dang nhap sai toi da truoc khi ap dung co che khoa tam thoi'),
+    ('ThoiGianKhoaTamThoiPhut', 'int', '1',
+     'Thoi gian khoa tai khoan tam thoi tinh theo phut'),
     ('SoNgayChoPhepDoiTra', 'int', '7',
      'So ngay toi da cho phep doi tra tinh tu ngay mua'),
     ('TyLeTichDiem', 'decimal', '0.01',

@@ -78,6 +78,7 @@ public class AppDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.SoDienThoai).HasColumnName("sodienthoai").HasMaxLength(10).IsRequired();
             entity.Property(e => e.TrangThai).HasColumnName("trangthai").HasMaxLength(50).HasDefaultValue("HoatDong").IsRequired();
             entity.Property(e => e.SoLanDangNhapSai).HasColumnName("solandangnhapsai").HasDefaultValue(0).IsRequired();
+            entity.Property(e => e.KhoaDenThoiDiem).HasColumnName("khoadenthoidiem");
 
             entity.HasOne(e => e.VaiTro)
                 .WithMany(v => v.NguoiDungs)

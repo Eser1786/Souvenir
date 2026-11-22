@@ -15,4 +15,5 @@ public static class VaiTroConstants
 public static class ThamSoConstants
 {
     public const string SoLanDangNhapSaiToiDa = "SoLanDangNhapSaiToiDa";
+    public const string ThoiGianKhoaTamThoiPhut = "ThoiGianKhoaTamThoiPhut";
 }

@@ -56,7 +56,15 @@ export const LoginScreen: React.FC = () => {
 
         if (isAccountLocked) {
           setIsLocked(true);
-          setError(null);
+          const lockoutMinutes = data?.lockoutMinutes;
+          if (lockoutMinutes) {
+            setError(`Tài khoản đang bị tạm khóa trong ${lockoutMinutes} phút do nhập sai nhiều lần. Vui lòng thử lại sau hoặc liên hệ quản lý.`);
+          } else {
+            setError(data?.message || 'Tài khoản đã bị khóa. Vui lòng liên hệ quản lý để được mở khóa.');
+          }
+        } else if (status === 429) {
+          setIsLocked(false);
+          setError(data?.message || 'Bạn đã gửi quá nhiều yêu cầu đăng nhập liên tiếp. Vui lòng đợi 1 phút trước khi thử lại.');
         } else if (status === 401) {
           setIsLocked(false);
           const remainingAttempts = data?.remainingAttempts;
@@ -130,24 +138,18 @@ export const LoginScreen: React.FC = () => {
                   id="password-input"
                   type={showPassword ? 'text' : 'password'}
                   className="form-input"
-                  placeholder="••••••••"
-                  value={matKhau}
-                  onChange={(e) => {
-                    setMatKhau(e.target.value);
-                    if (error) setError(null);
-                  }}
-                  autoComplete="current-password"
-                  disabled={isSubmitting}
+                  // Giữ nguyên các thuộc tính còn lại
                 />
-                <button
+                
+              </div>
+              <button
                   type="button"
-                  className="password-toggle-btn"
+                  className="login-password-toggle-btn"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                 >
                   {showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                </button>
-              </div>
+              </button>
             </div>
 
             {/* Alert Box: Locked Account */}
@@ -222,7 +224,7 @@ export const LoginScreen: React.FC = () => {
             Bán hàng nhanh · Quản lý kho · Kết nối khách hàng
           </div>
           <div className="footer-subtitle">
-            Cửa hàng 01 · Hệ thống quản lý nội bộ
+            Cửa hàng · Hệ thống quản lý nội bộ
           </div>
         </div>
       </section>

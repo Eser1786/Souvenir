@@ -1,5 +1,7 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Souvenir.Application;
@@ -9,6 +11,34 @@ using Souvenir.Infrastructure.Data;
 using Souvenir.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            "{\"message\":\"Bạn đã gửi quá nhiều yêu cầu đăng nhập liên tiếp. Vui lòng đợi 1 phút trước khi thử lại.\"}",
+            cancellationToken: token);
+    };
+
+    // Giới hạn 5 lần gọi login / 1 phút theo IP
+    options.AddPolicy("login-policy", httpContext =>
+    {
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown_client";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+});
 
 // Add Application & Infrastructure services
 builder.Services.AddApplication();
@@ -123,6 +153,8 @@ app.MapScalarApiReference();
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.UseCors("AllowFrontend");
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
