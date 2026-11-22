@@ -34,7 +34,23 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand,
         var hasReceipts = await _context.ChiTietNhapKhos
             .AnyAsync(ct => ct.SanPhamId == product.Id, cancellationToken);
 
-        if (hasSales || hasReturns || hasReceipts)
+        var hasStockAudits = await _context.ChiTietKiemKes
+            .AnyAsync(ct => ct.SanPhamId == product.Id, cancellationToken);
+
+        var hasHistory = hasSales || hasReturns || hasReceipts || hasStockAudits;
+        var isDiscontinued = string.Equals(
+            product.TrangThai,
+            "NgungKinhDoanh",
+            StringComparison.OrdinalIgnoreCase);
+
+        if (hasHistory && isDiscontinued)
+        {
+            return ProductResult<string>.Failed(
+                "Sản phẩm đã ngừng kinh doanh nhưng vẫn có lịch sử giao dịch hoặc kiểm kê nên không thể xóa hẳn.",
+                409);
+        }
+
+        if (hasHistory)
         {
             // Bước 66: Chặn xóa vật lý và chuyển trạng thái sang "Ngừng kinh doanh"
             product.TrangThai = "NgungKinhDoanh";

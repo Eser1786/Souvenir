@@ -60,8 +60,10 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         else if (!string.IsNullOrWhiteSpace(req.TenDanhMuc))
         {
             var trimmedCat = req.TenDanhMuc.Trim();
-            var dm = await _context.DanhMucSanPhams
-                .FirstOrDefaultAsync(d => d.TenDanhMuc.ToLower() == trimmedCat.ToLower(), cancellationToken);
+            var allCategories = await _context.DanhMucSanPhams.ToListAsync(cancellationToken);
+            var dm = allCategories.FirstOrDefault(d => 
+                Souvenir.Application.Common.StringNormalizer.EqualsNormalized(d.TenDanhMuc, trimmedCat));
+
             if (dm != null)
             {
                 product.DanhMucId = dm.Id;
@@ -86,8 +88,10 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         else if (!string.IsNullOrWhiteSpace(req.TenDonVi))
         {
             var trimmedDvt = req.TenDonVi.Trim();
-            var dvt = await _context.DonViTinhs
-                .FirstOrDefaultAsync(d => d.TenDonVi.ToLower() == trimmedDvt.ToLower(), cancellationToken);
+            var allUnits = await _context.DonViTinhs.ToListAsync(cancellationToken);
+            var dvt = allUnits.FirstOrDefault(d => 
+                Souvenir.Application.Common.StringNormalizer.EqualsNormalized(d.TenDonVi, trimmedDvt));
+
             if (dvt != null)
             {
                 product.DonViTinhId = dvt.Id;

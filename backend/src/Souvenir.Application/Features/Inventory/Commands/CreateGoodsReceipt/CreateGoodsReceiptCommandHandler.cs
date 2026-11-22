@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Souvenir.Application.Common;
 using Souvenir.Application.DTOs.Inventory;
 using Souvenir.Application.Interfaces;
 using Souvenir.Domain.Entities;
@@ -61,17 +62,18 @@ public class CreateGoodsReceiptCommandHandler : IRequestHandler<CreateGoodsRecei
             foreach (var item in req.ChiTiet)
             {
                 SanPham? sp = null;
+                var requestedMaSP = ProductCode.Normalize(item.MaSP);
                 if (item.SanPhamId.HasValue && item.SanPhamId.Value > 0)
                 {
                     sp = await _context.SanPhams
                         .Include(p => p.DonViTinh)
                         .FirstOrDefaultAsync(p => p.Id == item.SanPhamId.Value, cancellationToken);
                 }
-                else if (!string.IsNullOrWhiteSpace(item.MaSP))
+                else if (requestedMaSP.Length > 0)
                 {
                     sp = await _context.SanPhams
                         .Include(p => p.DonViTinh)
-                        .FirstOrDefaultAsync(p => p.MaSP == item.MaSP.Trim(), cancellationToken);
+                        .FirstOrDefaultAsync(p => p.MaSP.ToUpper() == requestedMaSP, cancellationToken);
                 }
 
                 // Nếu mặt hàng mới hoàn toàn (UC12 nhánh 2a)
@@ -83,19 +85,100 @@ public class CreateGoodsReceiptCommandHandler : IRequestHandler<CreateGoodsRecei
                         return GoodsReceiptResult<GoodsReceiptDto>.Failed("Tên sản phẩm mới không được để trống.", 400);
                     }
 
-                    string newMaSP = (item.MaSP ?? string.Empty).Trim().ToUpper();
-                    if (string.IsNullOrWhiteSpace(newMaSP))
+                    string newMaSP = requestedMaSP;
+                    if (newMaSP.Length > 0 && !ProductCode.HasValidFormat(newMaSP))
                     {
-                        var totalCount = await _context.SanPhams.CountAsync(cancellationToken);
-                        newMaSP = $"SP{(totalCount + 1):D3}";
+                        await transaction.RollbackAsync(cancellationToken);
+                        return GoodsReceiptResult<GoodsReceiptDto>.Failed(ProductCode.FormatErrorMessage, 400);
+                    }
+
+                    if (newMaSP.Length == 0)
+                    {
+                        var existingMaList = await _context.SanPhams
+                            .AsNoTracking()
+                            .Select(p => p.MaSP)
+                            .ToListAsync(cancellationToken);
+
+                        int maxNum = 0;
+                        foreach (var existing in existingMaList)
+                        {
+                            if (string.IsNullOrWhiteSpace(existing)) continue;
+                            var clean = existing.Trim().ToUpperInvariant();
+                            if (clean.StartsWith("SP") && int.TryParse(clean[2..], out var num))
+                            {
+                                if (num > maxNum) maxNum = num;
+                            }
+                        }
+
+                        int candidate = maxNum + 1;
+                        newMaSP = $"SP{candidate:D3}";
+                        while (await _context.SanPhams.AnyAsync(p => p.MaSP == newMaSP, cancellationToken))
+                        {
+                            candidate++;
+                            newMaSP = $"SP{candidate:D3}";
+                        }
+                    }
+
+                    int chosenDmId = item.DanhMucId ?? 0;
+                    if (chosenDmId <= 0)
+                    {
+                        if (!string.IsNullOrWhiteSpace(item.TenDanhMuc))
+                        {
+                            var trimmedCat = item.TenDanhMuc.Trim();
+                            var allCats = await _context.DanhMucSanPhams.ToListAsync(cancellationToken);
+                            var foundDm = allCats.FirstOrDefault(d => 
+                                Souvenir.Application.Common.StringNormalizer.EqualsNormalized(d.TenDanhMuc, trimmedCat));
+                            if (foundDm != null)
+                            {
+                                chosenDmId = foundDm.Id;
+                            }
+                            else
+                            {
+                                var newDm = new DanhMucSanPham { TenDanhMuc = trimmedCat, TrangThai = "HoatDong" };
+                                _context.DanhMucSanPhams.Add(newDm);
+                                await _context.SaveChangesAsync(cancellationToken);
+                                chosenDmId = newDm.Id;
+                            }
+                        }
+                        else
+                        {
+                            chosenDmId = defaultDm?.Id ?? 1;
+                        }
+                    }
+
+                    int chosenDvtId = item.DonViTinhId ?? 0;
+                    if (chosenDvtId <= 0)
+                    {
+                        if (!string.IsNullOrWhiteSpace(item.TenDonVi))
+                        {
+                            var trimmedDvt = item.TenDonVi.Trim();
+                            var allUnits = await _context.DonViTinhs.ToListAsync(cancellationToken);
+                            var foundDvt = allUnits.FirstOrDefault(d => 
+                                Souvenir.Application.Common.StringNormalizer.EqualsNormalized(d.TenDonVi, trimmedDvt));
+                            if (foundDvt != null)
+                            {
+                                chosenDvtId = foundDvt.Id;
+                            }
+                            else
+                            {
+                                var newDvt = new DonViTinh { TenDonVi = trimmedDvt };
+                                _context.DonViTinhs.Add(newDvt);
+                                await _context.SaveChangesAsync(cancellationToken);
+                                chosenDvtId = newDvt.Id;
+                            }
+                        }
+                        else
+                        {
+                            chosenDvtId = defaultDvt?.Id ?? 1;
+                        }
                     }
 
                     sp = new SanPham
                     {
                         MaSP = newMaSP,
                         TenSP = item.TenSP.Trim(),
-                        DanhMucId = item.DanhMucId ?? defaultDm?.Id ?? 1,
-                        DonViTinhId = item.DonViTinhId ?? defaultDvt?.Id ?? 1,
+                        DanhMucId = chosenDmId,
+                        DonViTinhId = chosenDvtId,
                         GiaNhap = item.DonGiaNhap,
                         GiaBan = Math.Round(item.DonGiaNhap * 1.2m, 0), // Default margin nếu chưa đặt
                         SoLuongTon = 0,

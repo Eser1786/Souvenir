@@ -5,6 +5,7 @@ using Souvenir.Application.DTOs.Products;
 using Souvenir.Application.Features.Products.Commands.CreateProduct;
 using Souvenir.Application.Features.Products.Commands.DeleteProduct;
 using Souvenir.Application.Features.Products.Commands.UpdateProduct;
+using Souvenir.Application.Features.Products.Queries.GetMetadata;
 using Souvenir.Application.Features.Products.Queries.GetProductById;
 using Souvenir.Application.Features.Products.Queries.GetProducts;
 using Souvenir.Domain.Constants;
@@ -21,6 +22,17 @@ public class ProductsController : ControllerBase
     public ProductsController(ISender sender)
     {
         _sender = sender;
+    }
+
+    /// <summary>
+    /// Lấy metadata sản phẩm: Danh sách danh mục, đơn vị tính và mã gợi ý tiếp theo
+    /// </summary>
+    [HttpGet("metadata")]
+    [ProducesResponseType(typeof(ProductMetadataDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProductMetadata(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetProductMetadataQuery(), cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>
@@ -115,6 +127,7 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = VaiTroConstants.QuanLy)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteProduct(int id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new DeleteProductCommand(id), cancellationToken);

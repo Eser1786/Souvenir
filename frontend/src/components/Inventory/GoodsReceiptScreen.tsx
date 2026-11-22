@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context';
-import { getProducts, type Product } from '../../api/products';
+import {
+  getProducts,
+  getProductMetadata,
+  type Product,
+  type CategoryItem,
+  type UnitItem,
+} from '../../api/products';
 import {
   getSuppliers,
   getGoodsReceipts,
@@ -46,6 +52,9 @@ interface ReceiptLineItem {
   sanPhamId?: number;
   maSP: string;
   tenSP: string;
+  danhMucId?: number;
+  tenDanhMuc?: string;
+  isNewCategory?: boolean;
   donViTinh: string;
   soLuongNhap: number;
   donGiaNhap: number;
@@ -62,6 +71,10 @@ export const GoodsReceiptScreen: React.FC = () => {
   const [lineItems, setLineItems] = useState<ReceiptLineItem[]>([]);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
+  // Metadata categories and units
+  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([]);
+  const [unitsList, setUnitsList] = useState<UnitItem[]>([]);
+
   // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -74,10 +87,11 @@ export const GoodsReceiptScreen: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
-      const [supplierList, productList, receipts] = await Promise.all([
+      const [supplierList, productList, receipts, meta] = await Promise.all([
         getSuppliers(),
         getProducts({ includeAllStatus: true }),
         getGoodsReceipts(),
+        getProductMetadata(),
       ]);
       setSuppliers(supplierList);
       if (supplierList.length > 0) {
@@ -85,6 +99,8 @@ export const GoodsReceiptScreen: React.FC = () => {
       }
       setProducts(productList);
       setReceiptHistory(receipts);
+      if (meta.categories.length > 0) setCategoriesList(meta.categories);
+      if (meta.units.length > 0) setUnitsList(meta.units);
 
       // Default one row
       if (productList.length > 0) {
@@ -147,7 +163,10 @@ export const GoodsReceiptScreen: React.FC = () => {
         isNewProduct: true,
         maSP: '',
         tenSP: '',
-        donViTinh: 'Cái',
+        danhMucId: categoriesList[0]?.id || 1,
+        tenDanhMuc: categoriesList[0]?.tenDanhMuc || 'Đồ lưu niệm',
+        isNewCategory: false,
+        donViTinh: unitsList[0]?.tenDonVi || 'Cái',
         soLuongNhap: 10,
         donGiaNhap: 25000,
       },
@@ -224,8 +243,11 @@ export const GoodsReceiptScreen: React.FC = () => {
 
     const payloadItems: GoodsReceiptItemInput[] = lineItems.map((item) => ({
       sanPhamId: item.isNewProduct ? undefined : item.sanPhamId,
-      maSP: item.maSP.trim() || undefined,
+      maSP: item.isNewProduct ? undefined : item.maSP.trim() || undefined,
       tenSP: item.tenSP.trim(),
+      danhMucId: item.isNewProduct && !item.isNewCategory ? item.danhMucId : undefined,
+      tenDanhMuc: item.isNewProduct ? (item.isNewCategory ? item.tenDanhMuc?.trim() : undefined) : undefined,
+      tenDonVi: item.isNewProduct ? item.donViTinh : undefined,
       soLuongNhap: Number(item.soLuongNhap),
       donGiaNhap: Number(item.donGiaNhap),
     }));
@@ -393,11 +415,11 @@ export const GoodsReceiptScreen: React.FC = () => {
                       <tr key={item.id}>
                         <td>
                           {item.isNewProduct ? (
-                            <div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               <input
                                 type="text"
                                 className="form-input"
-                                style={{ height: '32px', marginBottom: '4px' }}
+                                style={{ height: '32px' }}
                                 placeholder="Tên món hàng mới..."
                                 value={item.tenSP}
                                 onChange={(e) => handleUpdateLine(item.id, 'tenSP', e.target.value)}
@@ -405,11 +427,54 @@ export const GoodsReceiptScreen: React.FC = () => {
                               <input
                                 type="text"
                                 className="form-input"
-                                style={{ height: '28px', fontSize: '11px' }}
-                                placeholder="Mã SP (tự sinh nếu trống)"
-                                value={item.maSP}
-                                onChange={(e) => handleUpdateLine(item.id, 'maSP', e.target.value)}
+                                style={{ height: '28px', fontSize: '11px', textTransform: 'uppercase' }}
+                                value="Tự cấp khi lưu"
+                                readOnly
+                                aria-label="Mã sản phẩm được tạo tự động"
                               />
+                              {/* Chọn hoặc thêm danh mục mới cho sản phẩm mới */}
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                {item.isNewCategory ? (
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    style={{ height: '28px', fontSize: '12px', flex: 1 }}
+                                    placeholder="Nhập tên danh mục mới..."
+                                    value={item.tenDanhMuc || ''}
+                                    onChange={(e) => handleUpdateLine(item.id, 'tenDanhMuc', e.target.value)}
+                                  />
+                                ) : (
+                                  <select
+                                    className="form-select"
+                                    style={{ height: '28px', fontSize: '12px', flex: 1 }}
+                                    value={item.danhMucId}
+                                    onChange={(e) => handleUpdateLine(item.id, 'danhMucId', Number(e.target.value))}
+                                  >
+                                    {categoriesList.map((c) => (
+                                      <option key={c.id} value={c.id}>
+                                        {c.tenDanhMuc}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                                <button
+                                  type="button"
+                                  style={{
+                                    border: 'none',
+                                    background: '#F4EFEA',
+                                    color: '#A67C52',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    borderRadius: '4px',
+                                    padding: '4px 8px',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                  onClick={() => handleUpdateLine(item.id, 'isNewCategory', !item.isNewCategory)}
+                                >
+                                  {item.isNewCategory ? 'Chọn sẵn' : '+ DM mới'}
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <select
@@ -420,14 +485,29 @@ export const GoodsReceiptScreen: React.FC = () => {
                             >
                               {products.map((p) => (
                                 <option key={p.id} value={p.id}>
-                                  [{p.maSP}] {p.tenSP} (Tồn hiện tại: {p.soLuongTon})
+                                  [{p.maSP}] {p.tenSP} 
                                 </option>
                               ))}
                             </select>
                           )}
                         </td>
                         <td>
-                          <span style={{ fontSize: '12px', color: '#8C827A' }}>{item.donViTinh}</span>
+                          {item.isNewProduct ? (
+                            <select
+                              className="form-select"
+                              style={{ height: '32px', fontSize: '12px' }}
+                              value={item.donViTinh}
+                              onChange={(e) => handleUpdateLine(item.id, 'donViTinh', e.target.value)}
+                            >
+                              {unitsList.map((u) => (
+                                <option key={u.id} value={u.tenDonVi}>
+                                  {u.tenDonVi}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: '#8C827A' }}>{item.donViTinh}</span>
+                          )}
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <input
@@ -511,7 +591,7 @@ export const GoodsReceiptScreen: React.FC = () => {
                 disabled={submitting || lineItems.length === 0}
               >
                 <IconCheck />
-                {submitting ? 'Đang lưu phiếu...' : 'Xác nhận nhập kho (UC12)'}
+                {submitting ? 'Đang lưu phiếu...' : 'Xác nhận nhập kho'}
               </button>
 
               <div style={{ marginTop: '14px', fontSize: '11px', color: '#8C827A', textAlign: 'center' }}>

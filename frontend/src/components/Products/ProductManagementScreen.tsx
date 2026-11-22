@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context';
 import {
@@ -6,9 +6,12 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  getProductMetadata,
   type Product,
   type CreateProductInput,
   type UpdateProductInput,
+  type CategoryItem,
+  type UnitItem,
 } from '../../api/products';
 import './ProductManagementScreen.css';
 
@@ -17,6 +20,12 @@ const IconSearch = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
     <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const IconFilter = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5z" />
   </svg>
 );
 
@@ -87,35 +96,6 @@ const IconReceipt = () => (
   </svg>
 );
 
-const CATEGORIES = [
-  'Tất cả',
-  'Đồ lưu niệm',
-  'Móc khóa',
-  'Đồ thủ công mỹ nghệ',
-  'Trang sức và phụ kiện',
-  'Văn phòng phẩm',
-  'Đồ trang trí',
-  'Áo thun và túi vải',
-  'Quà tặng',
-  'Thú bông',
-];
-
-const normalizeCategoryKey = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/gi, 'd')
-    .toLowerCase()
-    .trim();
-
-const resolveCategoryOption = (raw?: string): string => {
-  if (!raw) return CATEGORIES[1];
-  const key = normalizeCategoryKey(raw);
-  return CATEGORIES.find((c) => c !== 'Tất cả' && normalizeCategoryKey(c) === key) || CATEGORIES[1];
-};
-
-const UNITS = ['Cái', 'Hộp', 'Bộ', 'Con', 'Chiếc', 'Quyển', 'Túi', 'Tấm'];
-
 export const ProductManagementScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -128,7 +108,17 @@ export const ProductManagementScreen: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState('');
+  const categoryFilterRef = useRef<HTMLDivElement>(null);
+
+  // Metadata from backend (Categories, Units, next suggested MaSP)
+  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([]);
+  const [unitsList, setUnitsList] = useState<UnitItem[]>([]);
+  const [nextSuggestedMa, setNextSuggestedMa] = useState<string>('SP010');
+  const [isAddingNewCategory, setIsAddingNewCategory] = useState<boolean>(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState<string>('');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -159,8 +149,14 @@ export const ProductManagementScreen: React.FC = () => {
   const fetchProductList = async () => {
     try {
       setLoading(true);
-      const data = await getProducts({ includeAllStatus: true });
+      const [data, meta] = await Promise.all([
+        getProducts({ includeAllStatus: true }),
+        getProductMetadata(),
+      ]);
       setProducts(data);
+      if (meta.categories.length > 0) setCategoriesList(meta.categories);
+      if (meta.units.length > 0) setUnitsList(meta.units);
+      if (meta.nextSuggestedMaSP) setNextSuggestedMa(meta.nextSuggestedMaSP);
     } catch {
       showToast('Không thể tải danh sách sản phẩm', 'error');
     } finally {
@@ -172,31 +168,62 @@ export const ProductManagementScreen: React.FC = () => {
     fetchProductList();
   }, []);
 
+  useEffect(() => {
+    if (!isCategoryFilterOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !categoryFilterRef.current?.contains(event.target)) {
+        setIsCategoryFilterOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsCategoryFilterOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isCategoryFilterOpen]);
+
   const categoryFilters = useMemo<Array<{ id: number | null; label: string }>>(() => {
-    const categoriesById = new Map<number, string>();
+    const list: Array<{ id: number | null; label: string }> = [{ id: null, label: 'Tất cả' }];
+
+    // Ưu tiên danh sách danh mục từ backend metadata
+    const addedIds = new Set<number>();
+    for (const c of categoriesList) {
+      list.push({ id: c.id, label: c.tenDanhMuc });
+      addedIds.add(c.id);
+    }
+
+    // Bổ sung các danh mục khác nếu có trong sản phẩm
     for (const product of products) {
-      if (product.danhMucId != null && product.tenDanhMuc.trim()) {
-        categoriesById.set(product.danhMucId, product.tenDanhMuc);
+      if (product.danhMucId != null && !addedIds.has(product.danhMucId) && product.tenDanhMuc?.trim()) {
+        list.push({ id: product.danhMucId, label: product.tenDanhMuc });
+        addedIds.add(product.danhMucId);
       }
     }
 
-    return [
-      { id: null, label: 'Tất cả' },
-      ...Array.from(categoriesById, ([id, label]) => ({ id, label })),
-    ];
-  }, [products]);
+    return list;
+  }, [categoriesList, products]);
+
+  const visibleCategoryFilters = categoryFilters
+    .filter((category): category is { id: number; label: string } => category.id !== null)
+    .filter((category) => category.label.toLocaleLowerCase('vi').includes(categorySearchTerm.trim().toLocaleLowerCase('vi')));
 
   // Filter products by category & search term
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      const matchCat = selectedCategoryId === null || p.danhMucId === selectedCategoryId;
+      const matchCat = selectedCategoryIds.length === 0 || selectedCategoryIds.includes(p.danhMucId ?? -1);
       const matchSearch =
         !searchTerm.trim() ||
         p.tenSP.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.maSP.toLowerCase().includes(searchTerm.toLowerCase());
       return matchCat && matchSearch;
     });
-  }, [products, selectedCategoryId, searchTerm]);
+  }, [products, selectedCategoryIds, searchTerm]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -210,15 +237,17 @@ export const ProductManagementScreen: React.FC = () => {
   const handleOpenCreateModal = () => {
     setModalMode('create');
     setCurrentId(null);
-    setFormMaSP('');
+    setFormMaSP(nextSuggestedMa || 'SP010');
     setFormTenSP('');
-    setFormDanhMuc(CATEGORIES[1]);
-    setFormDonVi(UNITS[0]);
+    setFormDanhMuc(categoriesList[0]?.tenDanhMuc || 'Đồ lưu niệm');
+    setFormDonVi(unitsList[0]?.tenDonVi || 'Cái');
     setFormGiaNhap(10000);
     setFormGiaBan(20000);
     setFormSoLuongTon(0);
     setFormImageUrl('');
     setFormTrangThai('KinhDoanh');
+    setIsAddingNewCategory(false);
+    setCustomCategoryInput('');
     setIsModalOpen(true);
   };
 
@@ -227,13 +256,15 @@ export const ProductManagementScreen: React.FC = () => {
     setCurrentId(p.id);
     setFormMaSP(p.maSP);
     setFormTenSP(p.tenSP);
-    setFormDanhMuc(resolveCategoryOption(p.tenDanhMuc));
-    setFormDonVi(p.tenDonVi || UNITS[0]);
+    setFormDanhMuc(p.tenDanhMuc || 'Đồ lưu niệm');
+    setFormDonVi(p.tenDonVi || 'Cái');
     setFormGiaNhap(p.giaNhap || 0);
     setFormGiaBan(p.giaBan || 0);
     setFormSoLuongTon(p.soLuongTon || 0);
     setFormImageUrl(p.imageUrl || p.hinhAnh || '');
     setFormTrangThai(p.trangThai || 'KinhDoanh');
+    setIsAddingNewCategory(false);
+    setCustomCategoryInput('');
     setIsModalOpen(true);
   };
 
@@ -253,12 +284,17 @@ export const ProductManagementScreen: React.FC = () => {
       return;
     }
 
+    const finalCategory = isAddingNewCategory ? customCategoryInput.trim() : formDanhMuc.trim();
+    if (!finalCategory) {
+      showToast('Vui lòng chọn hoặc nhập tên danh mục.', 'error');
+      return;
+    }
+
     try {
       if (modalMode === 'create') {
         const payload: CreateProductInput = {
-          maSP: formMaSP.trim() || undefined,
           tenSP: formTenSP.trim(),
-          tenDanhMuc: formDanhMuc,
+          tenDanhMuc: finalCategory,
           tenDonVi: formDonVi,
           giaNhap: Number(formGiaNhap),
           giaBan: Number(formGiaBan),
@@ -270,7 +306,7 @@ export const ProductManagementScreen: React.FC = () => {
       } else if (currentId) {
         const payload: UpdateProductInput = {
           tenSP: formTenSP.trim(),
-          tenDanhMuc: formDanhMuc,
+          tenDanhMuc: finalCategory,
           tenDonVi: formDonVi,
           giaNhap: Number(formGiaNhap),
           giaBan: Number(formGiaBan),
@@ -290,7 +326,11 @@ export const ProductManagementScreen: React.FC = () => {
   };
 
   const handleDeleteProduct = async (p: Product) => {
-    const confirm = window.confirm(`Bạn có chắc muốn xóa hoặc ngừng kinh doanh sản phẩm "${p.tenSP}" (${p.maSP})?`);
+    const isStopped = p.trangThai?.toLowerCase() === 'ngungkinhdoanh';
+    const confirmMessage = isStopped
+      ? `Sản phẩm "${p.tenSP}" (${p.maSP}) đã ngừng kinh doanh. Bạn có muốn xóa hẳn không? Sản phẩm có lịch sử giao dịch hoặc kiểm kê sẽ không thể xóa.`
+      : `Bạn có chắc muốn xóa hoặc ngừng kinh doanh sản phẩm "${p.tenSP}" (${p.maSP})?`;
+    const confirm = window.confirm(confirmMessage);
     if (!confirm) return;
 
     try {
@@ -429,18 +469,89 @@ export const ProductManagementScreen: React.FC = () => {
             )}
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="category-pills">
-            {categoryFilters.map((category) => (
+          {/* Category Filter */}
+          <div className="category-filter-bar">
+            <div className="category-filter-control" ref={categoryFilterRef}>
               <button
-                key={category.id ?? 'all'}
                 type="button"
-                className={`cat-pill ${selectedCategoryId === category.id ? 'active' : ''}`}
-                onClick={() => setSelectedCategoryId(category.id)}
+                className={`category-filter-trigger ${selectedCategoryIds.length > 0 ? 'active' : ''}`}
+                aria-expanded={isCategoryFilterOpen}
+                aria-controls="product-category-filter"
+                onClick={() => setIsCategoryFilterOpen((open) => !open)}
               >
-                {category.label}
+                <IconFilter />
+                <span>Danh mục</span>
+                {selectedCategoryIds.length > 0 && (
+                  <span className="category-filter-count">{selectedCategoryIds.length}</span>
+                )}
               </button>
-            ))}
+
+              {isCategoryFilterOpen && (
+                <div
+                  id="product-category-filter"
+                  className="category-filter-popover"
+                  role="dialog"
+                  aria-label="Lọc sản phẩm theo danh mục"
+                >
+                  <div className="category-filter-popover-header">
+                    <strong>Danh mục sản phẩm</strong>
+                    <div className="category-filter-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const visibleIds = visibleCategoryFilters.map((category) => category.id);
+                          setSelectedCategoryIds((current) =>
+                            Array.from(new Set([...current, ...visibleIds])),
+                          );
+                        }}
+                      >
+                        Chọn tất cả
+                      </button>
+                      <button type="button" onClick={() => setSelectedCategoryIds([])}>
+                        Xóa lọc
+                      </button>
+                    </div>
+                  </div>
+
+                  <input
+                    type="search"
+                    className="category-filter-search"
+                    placeholder="Tìm danh mục..."
+                    aria-label="Tìm danh mục"
+                    value={categorySearchTerm}
+                    onChange={(event) => setCategorySearchTerm(event.target.value)}
+                  />
+
+                  <div className="category-filter-options">
+                    {visibleCategoryFilters.length === 0 ? (
+                      <p className="category-filter-empty">Không tìm thấy danh mục.</p>
+                    ) : (
+                      visibleCategoryFilters.map((category) => (
+                        <label className="category-filter-option" key={category.id}>
+                          <input
+                            type="checkbox"
+                            checked={selectedCategoryIds.includes(category.id)}
+                            onChange={() => {
+                              setSelectedCategoryIds((current) =>
+                                current.includes(category.id)
+                                  ? current.filter((id) => id !== category.id)
+                                  : [...current, category.id],
+                              );
+                            }}
+                          />
+                          <span>{category.label}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  <div className="category-filter-footer">
+                    {selectedCategoryIds.length === 0
+                      ? 'Đang hiển thị tất cả danh mục'
+                      : `Đã chọn ${selectedCategoryIds.length} danh mục`}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -532,7 +643,7 @@ export const ProductManagementScreen: React.FC = () => {
                             <button
                               type="button"
                               className="action-btn-sm delete"
-                              title="Xóa / Ngừng kinh doanh"
+                              title={isStopped ? 'Xóa hẳn sản phẩm' : 'Xóa / Ngừng kinh doanh'}
                               onClick={() => handleDeleteProduct(p)}
                             >
                               <IconTrash />
@@ -570,15 +681,21 @@ export const ProductManagementScreen: React.FC = () => {
               <div className="modal-body">
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label className="form-label">Mã sản phẩm (Bỏ trống sẽ tự sinh)</label>
+                    <label className="form-label">
+                      {modalMode === 'create' ? 'Mã sản phẩm dự kiến' : 'Mã sản phẩm'}
+                    </label>
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="VD: SP011, THUBONG01..."
                       value={formMaSP}
-                      onChange={(e) => setFormMaSP(e.target.value)}
+                      readOnly={modalMode === 'create'}
                       disabled={modalMode === 'edit'}
                     />
+                    {modalMode === 'create' && (
+                      <small className="product-code-note">
+                        Backend sẽ tự cấp mã theo dạng SP + ít nhất 3 chữ số khi lưu.
+                      </small>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -596,16 +713,51 @@ export const ProductManagementScreen: React.FC = () => {
 
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label className="form-label">Danh mục sản phẩm</label>
-                    <select
-                      className="form-select"
-                      value={formDanhMuc}
-                      onChange={(e) => setFormDanhMuc(e.target.value)}
-                    >
-                      {CATEGORIES.filter((c) => c !== 'Tất cả').map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label className="form-label" style={{ margin: 0 }}>Danh mục sản phẩm</label>
+                      <button
+                        type="button"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#C8A27A',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                        onClick={() => {
+                          setIsAddingNewCategory(!isAddingNewCategory);
+                          setCustomCategoryInput('');
+                        }}
+                      >
+                        {isAddingNewCategory ? '← Chọn danh mục có sẵn' : '+ Thêm danh mục mới'}
+                      </button>
+                    </div>
+
+                    {isAddingNewCategory ? (
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Nhập tên danh mục mới (VD: Gốm sứ Bát Tràng)..."
+                        value={customCategoryInput}
+                        onChange={(e) => setCustomCategoryInput(e.target.value)}
+                        autoFocus
+                        required
+                      />
+                    ) : (
+                      <select
+                        className="form-select"
+                        value={formDanhMuc}
+                        onChange={(e) => setFormDanhMuc(e.target.value)}
+                      >
+                        {categoriesList.map((c) => (
+                          <option key={c.id} value={c.tenDanhMuc}>
+                            {c.tenDanhMuc}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -615,8 +767,10 @@ export const ProductManagementScreen: React.FC = () => {
                       value={formDonVi}
                       onChange={(e) => setFormDonVi(e.target.value)}
                     >
-                      {UNITS.map((u) => (
-                        <option key={u} value={u}>{u}</option>
+                      {unitsList.map((u) => (
+                        <option key={u.id} value={u.tenDonVi}>
+                          {u.tenDonVi}
+                        </option>
                       ))}
                     </select>
                   </div>

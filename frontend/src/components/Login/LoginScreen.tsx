@@ -138,7 +138,14 @@ export const LoginScreen: React.FC = () => {
                   id="password-input"
                   type={showPassword ? 'text' : 'password'}
                   className="form-input"
-                  // Giữ nguyên các thuộc tính còn lại
+                  placeholder="********"
+                  value={matKhau}
+                  onChange={(e) => {
+                    setMatKhau(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  autoComplete="current-password"
+                  disabled={isSubmitting}
                 />
                 
               </div>

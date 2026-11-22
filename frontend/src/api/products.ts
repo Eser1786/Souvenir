@@ -160,20 +160,6 @@ export const SEED_PRODUCTS_FALLBACK: Product[] = [
     tenDonVi: 'Túi',
     trangThai: 'KinhDoanh',
   },
-  {
-    id: 10,
-    maSP: 'SP010',
-    tenSP: 'Hộp quà lưu niệm',
-    danhMucId: 8,
-    tenDanhMuc: 'Quà tặng',
-    giaNhap: 55000,
-    giaBan: 90000,
-    soLuongTon: 20,
-    hinhAnh: '/gift-showcase.png',
-    imageUrl: '/gift-showcase.png',
-    tenDonVi: 'Hộp',
-    trangThai: 'KinhDoanh',
-  },
 ];
 
 // Helper to remove accents for flexible search/category comparison
@@ -257,6 +243,62 @@ export const updateProduct = async (id: number, data: UpdateProductInput): Promi
     ...response.data,
     imageUrl: response.data.imageUrl || response.data.hinhAnh,
     hinhAnh: response.data.imageUrl || response.data.hinhAnh,
+  };
+};
+
+export interface CategoryItem {
+  id: number;
+  tenDanhMuc: string;
+}
+
+export interface UnitItem {
+  id: number;
+  tenDonVi: string;
+}
+
+export interface ProductMetadata {
+  categories: CategoryItem[];
+  units: UnitItem[];
+  nextSuggestedMaSP: string;
+}
+
+export const FALLBACK_CATEGORIES: CategoryItem[] = [
+  { id: 1, tenDanhMuc: 'Đồ lưu niệm' },
+  { id: 2, tenDanhMuc: 'Móc khóa' },
+  { id: 3, tenDanhMuc: 'Đồ thủ công mỹ nghệ' },
+  { id: 4, tenDanhMuc: 'Trang sức và phụ kiện' },
+  { id: 5, tenDanhMuc: 'Văn phòng phẩm' },
+  { id: 6, tenDanhMuc: 'Đồ trang trí' },
+  { id: 7, tenDanhMuc: 'Áo thun và túi vải' },
+  { id: 8, tenDanhMuc: 'Quà tặng' },
+  { id: 9, tenDanhMuc: 'Thú bông' },
+];
+
+export const FALLBACK_UNITS: UnitItem[] = [
+  { id: 1, tenDonVi: 'Cái' },
+  { id: 2, tenDonVi: 'Hộp' },
+  { id: 3, tenDonVi: 'Bộ' },
+  { id: 4, tenDonVi: 'Con' },
+  { id: 5, tenDonVi: 'Chiếc' },
+  { id: 6, tenDonVi: 'Quyển' },
+  { id: 7, tenDonVi: 'Túi' },
+  { id: 8, tenDonVi: 'Tấm' },
+];
+
+export const getProductMetadata = async (): Promise<ProductMetadata> => {
+  try {
+    const response = await apiClient.get<ProductMetadata>('/products/metadata');
+    if (response.data && response.data.categories && response.data.categories.length > 0) {
+      return response.data;
+    }
+  } catch {
+    // ignore
+  }
+
+  return {
+    categories: FALLBACK_CATEGORIES,
+    units: FALLBACK_UNITS,
+    nextSuggestedMaSP: 'SP010',
   };
 };
 
