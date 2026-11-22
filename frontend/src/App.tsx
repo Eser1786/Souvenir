@@ -9,6 +9,7 @@ import { UsersManagementScreen } from './components/UsersManagement/UsersManagem
 import { ReportDashboardScreen } from './components/Reports/ReportDashboardScreen';
 import { ProductManagementScreen } from './components/Products/ProductManagementScreen';
 import { GoodsReceiptScreen } from './components/Inventory/GoodsReceiptScreen';
+import { StockAuditScreen } from './components/Inventory/StockAuditScreen';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -58,9 +59,9 @@ export const AppContent: React.FC = () => {
       <Route
         path="/returns"
         element={
-          <ProtectedRoute>
+          <ManagerRoute>
             <ReturnsScreen />
-          </ProtectedRoute>
+          </ManagerRoute>
         }
       />
       <Route
@@ -74,9 +75,17 @@ export const AppContent: React.FC = () => {
       <Route
         path="/inventory/receipts"
         element={
-          <ProtectedRoute>
+          <ManagerRoute>
             <GoodsReceiptScreen />
-          </ProtectedRoute>
+          </ManagerRoute>
+        }
+      />
+      <Route
+        path="/inventory/audits"
+        element={
+          <ManagerRoute>
+            <StockAuditScreen />
+          </ManagerRoute>
         }
       />
       <Route

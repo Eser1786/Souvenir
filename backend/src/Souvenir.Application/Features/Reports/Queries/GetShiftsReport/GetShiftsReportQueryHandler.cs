@@ -25,8 +25,8 @@ public class GetShiftsReportQueryHandler : IRequestHandler<GetShiftsReportQuery,
         var now = DateTime.Now;
         var (fromDate, toDate) = ResolveDateRange(request.Period, request.FromDate, request.ToDate, now);
 
-        var fromUtc = DateTime.SpecifyKind(fromDate, DateTimeKind.Unspecified);
-        var toUtc = DateTime.SpecifyKind(toDate, DateTimeKind.Unspecified);
+        var fromUtc = DateTime.SpecifyKind(fromDate, DateTimeKind.Local).ToUniversalTime();
+        var toUtc = DateTime.SpecifyKind(toDate, DateTimeKind.Local).ToUniversalTime();
 
         // Load shifts in time range
         var shifts = await _context.CaLamViecs

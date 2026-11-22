@@ -804,6 +804,14 @@ export const PosScreen: React.FC = () => {
                 <button
                   type="button"
                   className="nav-item"
+                  onClick={() => navigate('/inventory/audits')}
+                >
+                  <span className="nav-icon"><IconProduct /></span>
+                  <span>Kiểm kê kho</span>
+                </button>
+                <button
+                  type="button"
+                  className="nav-item"
                   onClick={() => navigate('/returns')}
                 >
                   <span className="nav-icon"><IconDraft /></span>
@@ -827,7 +835,9 @@ export const PosScreen: React.FC = () => {
             <div className="user-display-name">
               {user?.hoTen || user?.tenDangNhap || 'Trần Thu Hà'}
             </div>
-            <div className="user-shift-text">Nhân viên · Ca sáng</div>
+            <div className="user-shift-text">
+              {isManager ? 'Quản lý' : 'Nhân viên'} · {currentShift ? `Ca #CA-${currentShift.id}` : 'Chưa mở ca'}
+            </div>
             <button type="button" className="user-logout-link" onClick={handleLogout}>
               Đăng xuất
             </button>
@@ -846,7 +856,7 @@ export const PosScreen: React.FC = () => {
             </div>
             <h1 className="pos-page-title">Bán hàng POS</h1>
             <div className="pos-page-subtitle">
-              Ca sáng #CA1611-01 · Thu ngân: {user?.hoTen || user?.tenDangNhap || 'Trần Thu Hà'}
+              {currentShift ? `Ca đang mở #CA-${currentShift.id}` : 'Chưa mở ca làm việc'} · Thu ngân: {user?.hoTen || user?.tenDangNhap || 'Chưa đăng nhập'}
             </div>
           </div>
 

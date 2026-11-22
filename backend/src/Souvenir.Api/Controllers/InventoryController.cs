@@ -6,12 +6,13 @@ using Souvenir.Application.DTOs.Inventory;
 using Souvenir.Application.Features.Inventory.Commands.CreateGoodsReceipt;
 using Souvenir.Application.Features.Inventory.Queries.GetGoodsReceipts;
 using Souvenir.Application.Features.Inventory.Queries.GetSuppliers;
+using Souvenir.Domain.Constants;
 
 namespace Souvenir.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = VaiTroConstants.QuanLy)]
 public class InventoryController : ControllerBase
 {
     private readonly ISender _sender;

@@ -25,8 +25,8 @@ public class GetTopProductsQueryHandler : IRequestHandler<GetTopProductsQuery, T
         var now = DateTime.Now;
         var (fromDate, toDate) = ResolveDateRange(request.Period, request.FromDate, request.ToDate, now);
 
-        var fromUtc = DateTime.SpecifyKind(fromDate, DateTimeKind.Unspecified);
-        var toUtc = DateTime.SpecifyKind(toDate, DateTimeKind.Unspecified);
+        var fromUtc = DateTime.SpecifyKind(fromDate, DateTimeKind.Local).ToUniversalTime();
+        var toUtc = DateTime.SpecifyKind(toDate, DateTimeKind.Local).ToUniversalTime();
 
         var limit = request.Limit > 0 ? request.Limit : 5;
 

@@ -100,11 +100,30 @@ const CATEGORIES = [
   'Thú bông',
 ];
 
+const normalizeCategoryKey = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .trim();
+
+const resolveCategoryOption = (raw?: string): string => {
+  if (!raw) return CATEGORIES[1];
+  const key = normalizeCategoryKey(raw);
+  return CATEGORIES.find((c) => c !== 'Tất cả' && normalizeCategoryKey(c) === key) || CATEGORIES[1];
+};
+
 const UNITS = ['Cái', 'Hộp', 'Bộ', 'Con', 'Chiếc', 'Quyển', 'Túi', 'Tấm'];
 
 export const ProductManagementScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const isManager = useMemo(() => {
+    const role = (user?.vaiTro || '').toLowerCase();
+    return role.includes('quản lý') || role.includes('quanly') || role.includes('admin');
+  }, [user]);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -208,7 +227,7 @@ export const ProductManagementScreen: React.FC = () => {
     setCurrentId(p.id);
     setFormMaSP(p.maSP);
     setFormTenSP(p.tenSP);
-    setFormDanhMuc(p.tenDanhMuc || CATEGORIES[1]);
+    setFormDanhMuc(resolveCategoryOption(p.tenDanhMuc));
     setFormDonVi(p.tenDonVi || UNITS[0]);
     setFormGiaNhap(p.giaNhap || 0);
     setFormGiaBan(p.giaBan || 0);
@@ -300,15 +319,24 @@ export const ProductManagementScreen: React.FC = () => {
             <button type="button" className="nav-pill-btn active">
               Sản phẩm
             </button>
-            <button type="button" className="nav-pill-btn" onClick={() => navigate('/inventory/receipts')}>
-              <IconReceipt /> Nhập kho
-            </button>
+            {isManager && (
+              <>
+                <button type="button" className="nav-pill-btn" onClick={() => navigate('/inventory/receipts')}>
+                  <IconReceipt /> Nhập kho
+                </button>
+                <button type="button" className="nav-pill-btn" onClick={() => navigate('/inventory/audits')}>
+                  Kiểm kê kho
+                </button>
+              </>
+            )}
             <button type="button" className="nav-pill-btn" onClick={() => navigate('/customers')}>
               Khách hàng
             </button>
-            <button type="button" className="nav-pill-btn" onClick={() => navigate('/reports')}>
-              Báo cáo
-            </button>
+            {isManager && (
+              <button type="button" className="nav-pill-btn" onClick={() => navigate('/reports')}>
+                Báo cáo
+              </button>
+            )}
           </nav>
         </div>
 
@@ -381,22 +409,24 @@ export const ProductManagementScreen: React.FC = () => {
               />
             </div>
 
-            <div className="action-buttons">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => navigate('/inventory/receipts')}
-              >
-                <IconReceipt /> Lập phiếu nhập kho
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleOpenCreateModal}
-              >
-                <IconPlus /> Thêm sản phẩm mới 
-              </button>
-            </div>
+            {isManager && (
+              <div className="action-buttons">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => navigate('/inventory/receipts')}
+                >
+                  <IconReceipt /> Lập phiếu nhập kho
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleOpenCreateModal}
+                >
+                  <IconPlus /> Thêm sản phẩm mới 
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Category Filter Pills */}
@@ -428,19 +458,19 @@ export const ProductManagementScreen: React.FC = () => {
                 <th style={{ width: '110px', textAlign: 'right' }}>Giá bán</th>
                 <th style={{ width: '100px', textAlign: 'center' }}>Tồn kho</th>
                 <th style={{ width: '130px', textAlign: 'center' }}>Trạng thái</th>
-                <th style={{ width: '100px', textAlign: 'center' }}>Thao tác</th>
+                {isManager && <th style={{ width: '100px', textAlign: 'center' }}>Thao tác</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: '40px' }}>
+                  <td colSpan={isManager ? 10 : 9} style={{ textAlign: 'center', padding: '40px' }}>
                     Đang tải danh mục sản phẩm...
                   </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: '40px', color: '#8C827A' }}>
+                  <td colSpan={isManager ? 10 : 9} style={{ textAlign: 'center', padding: '40px', color: '#8C827A' }}>
                     Không tìm thấy sản phẩm nào phù hợp với bộ lọc.
                   </td>
                 </tr>
@@ -488,26 +518,28 @@ export const ProductManagementScreen: React.FC = () => {
                           {isStopped ? 'Ngừng kinh doanh' : 'Đang kinh doanh'}
                         </span>
                       </td>
-                      <td>
-                        <div className="action-cell" style={{ justifyContent: 'center' }}>
-                          <button
-                            type="button"
-                            className="action-btn-sm"
-                            title="Sửa thông tin sản phẩm"
-                            onClick={() => handleOpenEditModal(p)}
-                          >
-                            <IconEdit />
-                          </button>
-                          <button
-                            type="button"
-                            className="action-btn-sm delete"
-                            title="Xóa / Ngừng kinh doanh"
-                            onClick={() => handleDeleteProduct(p)}
-                          >
-                            <IconTrash />
-                          </button>
-                        </div>
-                      </td>
+                      {isManager && (
+                        <td>
+                          <div className="action-cell" style={{ justifyContent: 'center' }}>
+                            <button
+                              type="button"
+                              className="action-btn-sm"
+                              title="Sửa thông tin sản phẩm"
+                              onClick={() => handleOpenEditModal(p)}
+                            >
+                              <IconEdit />
+                            </button>
+                            <button
+                              type="button"
+                              className="action-btn-sm delete"
+                              title="Xóa / Ngừng kinh doanh"
+                              onClick={() => handleDeleteProduct(p)}
+                            >
+                              <IconTrash />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -648,7 +680,7 @@ export const ProductManagementScreen: React.FC = () => {
                 <div className="form-group">
                   <label className="form-label">Đường dẫn ảnh sản phẩm (Paste URL ảnh)</label>
                   <input
-                    type="url"
+                    type="text"
                     className="form-input"
                     placeholder="https://images.unsplash.com/... hoặc /gift-showcase.png"
                     value={formImageUrl}

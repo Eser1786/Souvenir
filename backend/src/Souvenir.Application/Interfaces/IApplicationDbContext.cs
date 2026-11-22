@@ -24,6 +24,8 @@ public interface IApplicationDbContext
     DbSet<NhaCungCap> NhaCungCaps { get; }
     DbSet<PhieuNhapKho> PhieuNhapKhos { get; }
     DbSet<ChiTietNhapKho> ChiTietNhapKhos { get; }
+    DbSet<PhieuKiemKe> PhieuKiemKes { get; }
+    DbSet<ChiTietKiemKe> ChiTietKiemKes { get; }
 
     /// <summary>Dùng để mở transaction (UC07 tạo đơn + trừ kho, UC12 nhập kho + cộng kho).</summary>
     DatabaseFacade Database { get; }

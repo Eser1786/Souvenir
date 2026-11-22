@@ -45,7 +45,11 @@ public static partial class ReturnPolicy
     }
 
     /// <summary>Hạn cuối được đổi trả (hết ngày thứ N kể từ ngày mua).</summary>
-    public static DateTime TinhHanDoiTra(DateTime ngayMua, int soNgay) => ngayMua.Date.AddDays(soNgay + 1).AddTicks(-1);
+    public static DateTime TinhHanDoiTra(DateTime ngayMua, int soNgay)
+    {
+        var localNgayMua = ngayMua.Kind == DateTimeKind.Utc ? ngayMua.ToLocalTime() : ngayMua;
+        return DateTime.SpecifyKind(localNgayMua.Date.AddDays(soNgay + 1).AddTicks(-1), DateTimeKind.Unspecified);
+    }
 
     /// <summary>Tỷ lệ tiền khách thực trả / tổng tiền hàng, để phân bổ giảm giá vào đơn giá hoàn.</summary>
     public static decimal TyLeThanhToan(DonHang donHang)
@@ -142,6 +146,6 @@ public static partial class ReturnPolicy
         };
     }
 
-    /// <summary>Giờ hiện tại theo cùng quy ước với DonHang.NgayTao (giờ địa phương, Kind = Unspecified).</summary>
-    public static DateTime Now() => DateTime.UtcNow;
+    /// <summary>Giờ hiện tại theo cùng quy ước với PHIEU_TRA_HANG.ngayTra (giờ địa phương, Kind = Unspecified).</summary>
+    public static DateTime Now() => DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
 }

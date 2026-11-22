@@ -24,7 +24,7 @@ public class DiscountsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Thông tin hợp lệ, phần trăm/số tiền giảm, và tổng thanh toán mới</returns>
     [HttpPost("check")]
-    [AllowAnonymous]
+    [Authorize]
     [ProducesResponseType(typeof(CheckDiscountResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(CheckDiscountResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CheckDiscount(
