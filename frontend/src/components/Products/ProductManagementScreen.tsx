@@ -103,7 +103,7 @@ const CATEGORIES = [
 const UNITS = ['Cái', 'Hộp', 'Bộ', 'Con', 'Chiếc', 'Quyển', 'Túi', 'Tấm'];
 
 export const ProductManagementScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -320,6 +320,16 @@ export const ProductManagementScreen: React.FC = () => {
               <span className="user-role">{user?.vaiTro || 'Quản lý'}</span>
             </div>
           </div>
+          <button
+            type="button"
+            className="btn-logout"
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+          >
+            Đăng xuất
+          </button>
         </div>
       </header>
 

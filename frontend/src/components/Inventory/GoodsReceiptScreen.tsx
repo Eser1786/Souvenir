@@ -52,7 +52,7 @@ interface ReceiptLineItem {
 }
 
 export const GoodsReceiptScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -301,6 +301,16 @@ export const GoodsReceiptScreen: React.FC = () => {
               <span className="user-role">Quản lý</span>
             </div>
           </div>
+          <button
+            type="button"
+            className="btn-logout"
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+          >
+            Đăng xuất
+          </button>
         </div>
       </header>
 

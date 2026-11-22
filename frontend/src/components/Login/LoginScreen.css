@@ -73,49 +73,48 @@
   display: flex;
   align-items: center;
   background-color: #FDF5ED;
-  border-radius: 12px;
-  height: 48px;
-  padding: 0 16px;
-  border: 1px solid transparent;
-  transition: all 0.2s ease-in-out;
+  box-sizing: border-box;
+  /* Giữ các style nền, chiều cao, padding hiện có */
 }
 
 .input-container:focus-within {
-  border-color: #B89E82;
-  background-color: #FFFDFB;
-  box-shadow: 0 0 0 3px rgba(184, 158, 130, 0.2);
+  border: none;
+  box-shadow: none;
 }
 
 .form-input {
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-size: 15px;
-  color: #1F2937;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
 }
 
 .form-input::placeholder {
   color: #9CA3AF;
 }
 
-.password-toggle-btn {
-  font-size: 13px;
-  font-weight: 500;
-  color: #6B7280;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  white-space: nowrap;
+.login-password-toggle-btn {
+  align-self: flex-start;
+  margin-top: -4px;
   padding: 4px 8px;
+  border: none;
   border-radius: 6px;
-  transition: color 0.2s ease;
+  background: transparent;
+  color: #967858;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
-.password-toggle-btn:hover {
-  color: #1F2937;
-  background: rgba(0, 0, 0, 0.04);
+.login-password-toggle-btn:hover {
+  color: #423229;
+  background-color: #FDF5ED;
+}
+
+.login-password-toggle-btn:focus-visible {
+  outline: 2px solid #B89E82;
+  outline-offset: 2px;
 }
 
 /* Alert Boxes */

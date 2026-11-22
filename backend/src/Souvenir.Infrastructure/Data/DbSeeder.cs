@@ -48,6 +48,19 @@ public static class DbSeeder
             await context.SaveChangesAsync();
         }
 
+        var lockoutMinutesParam = await context.ThamSos.FirstOrDefaultAsync(t => t.TenThamSo == ThamSoConstants.ThoiGianKhoaTamThoiPhut);
+        if (lockoutMinutesParam == null)
+        {
+            context.ThamSos.Add(new ThamSo
+            {
+                TenThamSo = ThamSoConstants.ThoiGianKhoaTamThoiPhut,
+                KieuDuLieu = "int",
+                GiaTri = "1",
+                MoTa = "Thoi gian khoa tai khoan tam thoi sau khi vuot qua so lan dang nhap sai toi da (phut)"
+            });
+            await context.SaveChangesAsync();
+        }
+
         // 3. Seed Default Users
         var adminUser = await context.NguoiDungs.FirstOrDefaultAsync(u => u.TenDangNhap == "admin");
         if (adminUser == null)

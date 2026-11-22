@@ -10,6 +10,7 @@ public class NguoiDung
     public string SoDienThoai { get; set; } = string.Empty;
     public string TrangThai { get; set; } = "HoatDong";
     public int SoLanDangNhapSai { get; set; } = 0;
+    public DateTime? KhoaDenThoiDiem { get; set; }
 
     public VaiTro? VaiTro { get; set; }
 }
