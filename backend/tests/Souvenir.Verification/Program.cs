@@ -3,7 +3,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Souvenir.Application.DTOs.Inventory;
+using Souvenir.Application.DTOs.Products;
 using Souvenir.Application.DTOs.Users;
+using Souvenir.Application.Features.Inventory.Commands.CreateGoodsReceipt;
 using Souvenir.Application.Features.Users.Commands.CreateUser;
 using Souvenir.Application.Features.Users.Commands.DeleteUser;
 using Souvenir.Application.Features.Users.Commands.ToggleUserStatus;
@@ -21,6 +25,8 @@ using Souvenir.Application.Features.Customers.Queries.GetCustomerOrders;
 using Souvenir.Application.DTOs.StockAudits;
 using Souvenir.Application.Features.StockAudits.Commands.BalanceStockAudit;
 using Souvenir.Application.Features.StockAudits.Commands.SaveDraftStockAudit;
+using Souvenir.Application.Features.Products.Commands.CreateProduct;
+using Souvenir.Application.Features.Products.Commands.DeleteProduct;
 using Souvenir.Domain.Constants;
 using Souvenir.Domain.Entities;
 using Souvenir.Infrastructure.Data;
@@ -57,6 +63,16 @@ class Program
         await Test_DeleteLastActiveManager_Returns400();
         await Test_DemoteLastActiveManager_Returns400();
         await Test_MultipleManagers_AllowsActionOnFirst_BlocksActionOnLast();
+
+        Console.WriteLine("\n--- VERIFICATION SUITE FOR PRODUCT CODE FORMAT ---");
+        await Test_CreateProduct_InvalidCode_Returns400();
+        await Test_CreateProduct_NormalizesValidCode();
+        await Test_CreateProduct_AutoGeneratesNextCode();
+        await Test_GoodsReceipt_InvalidNewProductCode_Returns400();
+
+        Console.WriteLine("\n--- VERIFICATION SUITE FOR PRODUCT DELETION ---");
+        await Test_DeleteDiscontinuedProduct_WithoutHistory_IsHardDeleted();
+        await Test_DeleteDiscontinuedProduct_WithHistory_IsPreserved();
 
         Console.WriteLine("\n--- VERIFICATION SUITE FOR UC05 (VOUCHERS & DISCOUNT) ---");
         await Test_CheckDiscount_QUATANG10_ValidPercentDiscount();
@@ -125,6 +141,212 @@ class Program
             Console.ResetColor();
             Console.WriteLine($"{testName} - {failureDetails}");
         }
+    }
+
+    private static async Task Test_CreateProduct_InvalidCode_Returns400()
+    {
+        using var context = CreateInMemoryDbContext();
+        var handler = new CreateProductCommandHandler(context);
+        var result = await handler.Handle(
+            new CreateProductCommand(new CreateProductRequest
+            {
+                MaSP = "ABC123",
+                TenSP = "Móc khóa thử nghiệm",
+                TenDanhMuc = "Móc khóa",
+                TenDonVi = "Cái",
+                GiaNhap = 10000m,
+                GiaBan = 20000m
+            }),
+            CancellationToken.None);
+
+        AssertTest(
+            "Product code: Rejects a non-SP code",
+            !result.IsSuccess && result.StatusCode == 400 && !await context.SanPhams.AnyAsync(),
+            $"Expected 400 with no product saved, got {result.StatusCode}. Message: {result.Message}"
+        );
+    }
+
+    private static async Task Test_CreateProduct_NormalizesValidCode()
+    {
+        using var context = CreateInMemoryDbContext();
+        var handler = new CreateProductCommandHandler(context);
+        var result = await handler.Handle(
+            new CreateProductCommand(new CreateProductRequest
+            {
+                MaSP = "sp011",
+                TenSP = "Móc khóa thử nghiệm",
+                TenDanhMuc = "Móc khóa",
+                TenDonVi = "Cái",
+                GiaNhap = 10000m,
+                GiaBan = 20000m
+            }),
+            CancellationToken.None);
+
+        AssertTest(
+            "Product code: Normalizes valid lowercase code",
+            result.IsSuccess && result.Data?.MaSP == "SP011",
+            $"Expected SP011, got {result.Data?.MaSP ?? result.Message}"
+        );
+    }
+
+    private static async Task Test_CreateProduct_AutoGeneratesNextCode()
+    {
+        using var context = CreateInMemoryDbContext();
+        var category = new DanhMucSanPham { TenDanhMuc = "Quà tặng" };
+        var unit = new DonViTinh { TenDonVi = "Cái" };
+        context.DanhMucSanPhams.Add(category);
+        context.DonViTinhs.Add(unit);
+        await context.SaveChangesAsync();
+        context.SanPhams.Add(new SanPham
+        {
+            MaSP = "SP009",
+            TenSP = "Sản phẩm hiện có",
+            DanhMucId = category.Id,
+            DonViTinhId = unit.Id
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new CreateProductCommandHandler(context);
+        var result = await handler.Handle(
+            new CreateProductCommand(new CreateProductRequest
+            {
+                TenSP = "Móc khóa thử nghiệm",
+                TenDanhMuc = category.TenDanhMuc,
+                TenDonVi = unit.TenDonVi,
+                GiaNhap = 10000m,
+                GiaBan = 20000m
+            }),
+            CancellationToken.None);
+
+        AssertTest(
+            "Product code: Generates next code from SP009",
+            result.IsSuccess && result.Data?.MaSP == "SP010",
+            $"Expected SP010, got {result.Data?.MaSP ?? result.Message}"
+        );
+    }
+
+    private static async Task Test_GoodsReceipt_InvalidNewProductCode_Returns400()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
+        using var context = new AppDbContext(options);
+        var supplier = new NhaCungCap
+        {
+            MaNCC = "NCC001",
+            TenNCC = "Nhà cung cấp thử nghiệm",
+            SoDienThoai = "0900000000"
+        };
+        context.NhaCungCaps.Add(supplier);
+        await context.SaveChangesAsync();
+
+        var handler = new CreateGoodsReceiptCommandHandler(context);
+        var result = await handler.Handle(
+            new CreateGoodsReceiptCommand(1, new CreateGoodsReceiptRequest
+            {
+                NhaCungCapId = supplier.Id,
+                ChiTiet =
+                [
+                    new GoodsReceiptItemRequest
+                    {
+                        MaSP = "ABC123",
+                        TenSP = "Mặt hàng thử nghiệm",
+                        SoLuongNhap = 1,
+                        DonGiaNhap = 10000m
+                    }
+                ]
+            }),
+            CancellationToken.None);
+
+        AssertTest(
+            "Product code: Goods receipt rejects an invalid new-product code",
+            !result.IsSuccess && result.StatusCode == 400 && !await context.SanPhams.AnyAsync(),
+            $"Expected 400 with no product saved, got {result.StatusCode}. Message: {result.Message}"
+        );
+    }
+
+    private static async Task Test_DeleteDiscontinuedProduct_WithoutHistory_IsHardDeleted()
+    {
+        using var context = CreateInMemoryDbContext();
+        var product = await SeedProductForDeleteTestAsync(context, "NgungKinhDoanh");
+        var handler = new DeleteProductCommandHandler(context);
+
+        var result = await handler.Handle(new DeleteProductCommand(product.Id), CancellationToken.None);
+        var stillExists = await context.SanPhams.AnyAsync(p => p.Id == product.Id);
+
+        AssertTest(
+            "Product deletion: Permanently deletes a discontinued product without history",
+            result.IsSuccess && result.Data == "DaXoa" && !stillExists,
+            $"Expected hard delete, got status {result.StatusCode}. Message: {result.Message}"
+        );
+    }
+
+    private static async Task Test_DeleteDiscontinuedProduct_WithHistory_IsPreserved()
+    {
+        using var context = CreateInMemoryDbContext();
+        var product = await SeedProductForDeleteTestAsync(context, "KinhDoanh");
+        var manager = new NguoiDung
+        {
+            VaiTroId = 1,
+            TenDangNhap = "delete-test-manager",
+            MatKhau = "hash",
+            HoTen = "Quản lý kiểm thử",
+            SoDienThoai = "0900000000"
+        };
+        context.NguoiDungs.Add(manager);
+        await context.SaveChangesAsync();
+
+        var audit = new PhieuKiemKe
+        {
+            MaPhieu = "KK-DELETE-TEST",
+            NguoiDungId = manager.Id,
+            NgayKiemKe = DateTime.UtcNow
+        };
+        context.PhieuKiemKes.Add(audit);
+        await context.SaveChangesAsync();
+        context.ChiTietKiemKes.Add(new ChiTietKiemKe
+        {
+            PhieuKiemKeId = audit.Id,
+            SanPhamId = product.Id
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new DeleteProductCommandHandler(context);
+        var firstResult = await handler.Handle(new DeleteProductCommand(product.Id), CancellationToken.None);
+        var secondResult = await handler.Handle(new DeleteProductCommand(product.Id), CancellationToken.None);
+        var retainedProduct = await context.SanPhams.FirstOrDefaultAsync(p => p.Id == product.Id);
+
+        AssertTest(
+            "Product deletion: Keeps history and blocks hard delete after discontinuation",
+            firstResult.IsSuccess &&
+            firstResult.Data == "NgungKinhDoanh" &&
+            !secondResult.IsSuccess &&
+            secondResult.StatusCode == 409 &&
+            retainedProduct?.TrangThai == "NgungKinhDoanh",
+            $"Expected soft delete then 409, got first {firstResult.StatusCode}, second {secondResult.StatusCode}."
+        );
+    }
+
+    private static async Task<SanPham> SeedProductForDeleteTestAsync(AppDbContext context, string status)
+    {
+        var category = new DanhMucSanPham { TenDanhMuc = "Danh mục kiểm thử" };
+        var unit = new DonViTinh { TenDonVi = "Cái" };
+        context.DanhMucSanPhams.Add(category);
+        context.DonViTinhs.Add(unit);
+        await context.SaveChangesAsync();
+
+        var product = new SanPham
+        {
+            MaSP = "SP900",
+            TenSP = "Sản phẩm kiểm thử",
+            DanhMucId = category.Id,
+            DonViTinhId = unit.Id,
+            TrangThai = status
+        };
+        context.SanPhams.Add(product);
+        await context.SaveChangesAsync();
+        return product;
     }
 
     private static async Task Test_CreateUser_DuplicateUsername_Returns409()

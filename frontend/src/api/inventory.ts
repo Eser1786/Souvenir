@@ -36,7 +36,9 @@ export interface GoodsReceiptItemInput {
   maSP?: string;
   tenSP?: string;
   danhMucId?: number;
+  tenDanhMuc?: string;
   donViTinhId?: number;
+  tenDonVi?: string;
   soLuongNhap: number;
   donGiaNhap: number;
 }

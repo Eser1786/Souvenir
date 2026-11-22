@@ -6,7 +6,9 @@ public class GoodsReceiptItemRequest
     public string? MaSP { get; set; }
     public string? TenSP { get; set; }
     public int? DanhMucId { get; set; }
+    public string? TenDanhMuc { get; set; }
     public int? DonViTinhId { get; set; }
+    public string? TenDonVi { get; set; }
     public int SoLuongNhap { get; set; }
     public decimal DonGiaNhap { get; set; }
 }

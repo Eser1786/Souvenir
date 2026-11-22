@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Souvenir.Application.Common;
 using Souvenir.Application.DTOs.Products;
 using Souvenir.Application.Interfaces;
 using Souvenir.Domain.Entities;
@@ -38,20 +39,42 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             return ProductResult<ProductDto>.Failed("Số lượng tồn kho không được âm.", 400);
         }
 
-        string maSP = (req.MaSP ?? string.Empty).Trim().ToUpper();
+        string maSP = ProductCode.Normalize(req.MaSP);
+        if (maSP.Length > 0 && !ProductCode.HasValidFormat(maSP))
+        {
+            return ProductResult<ProductDto>.Failed(ProductCode.FormatErrorMessage, 400);
+        }
+
         if (string.IsNullOrWhiteSpace(maSP))
         {
-            var totalCount = await _context.SanPhams.CountAsync(cancellationToken);
-            maSP = $"SP{(totalCount + 1):D3}";
+            var existingMaList = await _context.SanPhams
+                .AsNoTracking()
+                .Select(p => p.MaSP)
+                .ToListAsync(cancellationToken);
+
+            int maxNum = 0;
+            foreach (var existing in existingMaList)
+            {
+                if (string.IsNullOrWhiteSpace(existing)) continue;
+                var clean = existing.Trim().ToUpperInvariant();
+                if (clean.StartsWith("SP") && int.TryParse(clean[2..], out var num))
+                {
+                    if (num > maxNum) maxNum = num;
+                }
+            }
+
+            int candidate = maxNum + 1;
+            maSP = $"SP{candidate:D3}";
             while (await _context.SanPhams.AnyAsync(p => p.MaSP == maSP, cancellationToken))
             {
-                totalCount++;
-                maSP = $"SP{(totalCount + 1):D3}";
+                candidate++;
+                maSP = $"SP{candidate:D3}";
             }
         }
         else
         {
-            var exists = await _context.SanPhams.AnyAsync(p => p.MaSP == maSP, cancellationToken);
+            // Normalize to uppercase before checking for an existing code.
+            var exists = await _context.SanPhams.AnyAsync(p => p.MaSP.ToUpper() == maSP, cancellationToken);
             if (exists)
             {
                 return ProductResult<ProductDto>.Failed($"Mã sản phẩm '{maSP}' đã tồn tại trong hệ thống.", 409);
@@ -64,8 +87,10 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             if (!string.IsNullOrWhiteSpace(req.TenDanhMuc))
             {
                 var trimmedCat = req.TenDanhMuc.Trim();
-                var dm = await _context.DanhMucSanPhams
-                    .FirstOrDefaultAsync(d => d.TenDanhMuc.ToLower() == trimmedCat.ToLower(), cancellationToken);
+                var allCategories = await _context.DanhMucSanPhams.ToListAsync(cancellationToken);
+                var dm = allCategories.FirstOrDefault(d => 
+                    Souvenir.Application.Common.StringNormalizer.EqualsNormalized(d.TenDanhMuc, trimmedCat));
+
                 if (dm != null)
                 {
                     danhMucId = dm.Id;
@@ -91,8 +116,10 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             if (!string.IsNullOrWhiteSpace(req.TenDonVi))
             {
                 var trimmedDvt = req.TenDonVi.Trim();
-                var dvt = await _context.DonViTinhs
-                    .FirstOrDefaultAsync(d => d.TenDonVi.ToLower() == trimmedDvt.ToLower(), cancellationToken);
+                var allUnits = await _context.DonViTinhs.ToListAsync(cancellationToken);
+                var dvt = allUnits.FirstOrDefault(d => 
+                    Souvenir.Application.Common.StringNormalizer.EqualsNormalized(d.TenDonVi, trimmedDvt));
+
                 if (dvt != null)
                 {
                     donViTinhId = dvt.Id;

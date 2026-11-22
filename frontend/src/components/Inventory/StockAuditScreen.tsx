@@ -502,7 +502,7 @@ export const StockAuditScreen: React.FC = () => {
         <section className="audit-card">
           <div className="audit-card-header">
             <div>
-              <h2 className="audit-card-title">Bảng kiểm đếm tồn kho thực tế (UC13)</h2>
+              <h2 className="audit-card-title">Bảng kiểm đếm tồn kho thực tế </h2>
               <p className="audit-card-desc">
                 Nhập số lượng đếm được thực tế tại cửa hàng. Mọi mặt hàng có chênh lệch bắt buộc phải nhập lý do giải trình trước khi cân bằng kho.
               </p>

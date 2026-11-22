@@ -56,14 +56,15 @@ ON CONFLICT (tenVaiTro) DO NOTHING;
 
 INSERT INTO danh_muc_san_pham (tenDanhMuc, trangThai)
 VALUES
-    ('Do luu niem', 'HoatDong'),
-    ('Moc khoa', 'HoatDong'),
-    ('Do thu cong my nghe', 'HoatDong'),
-    ('Trang suc va phu kien', 'HoatDong'),
-    ('Van phong pham', 'HoatDong'),
-    ('Do trang tri', 'HoatDong'),
-    ('Ao thun va tui vai', 'HoatDong'),
-    ('Qua tang', 'HoatDong')
+    ('Đồ lưu niệm', 'HoatDong'),
+    ('Móc khóa', 'HoatDong'),
+    ('Đồ thủ công mỹ nghệ', 'HoatDong'),
+    ('Trang sức và phụ kiện', 'HoatDong'),
+    ('Văn phòng phẩm', 'HoatDong'),
+    ('Đồ trang trí', 'HoatDong'),
+    ('Áo thun và túi vải', 'HoatDong'),
+    ('Quà tặng', 'HoatDong'),
+    ('Thú bông', 'HoatDong')
 ON CONFLICT (tenDanhMuc) DO NOTHING;
 
 
@@ -73,14 +74,14 @@ ON CONFLICT (tenDanhMuc) DO NOTHING;
 
 INSERT INTO don_vi_tinh (tenDonVi)
 VALUES
-    ('Cai'),
-    ('Hop'),
-    ('Bo'),
+    ('Cái'),
+    ('Hộp'),
+    ('Bộ'),
     ('Con'),
-    ('Chiec'),
-    ('Quyen'),
-    ('Tui'),
-    ('Tam')
+    ('Chiếc'),
+    ('Quyển'),
+    ('Túi'),
+    ('Tấm')
 ON CONFLICT (tenDonVi) DO NOTHING;
 
 
@@ -118,8 +119,6 @@ ON CONFLICT (maNCC) DO NOTHING;
 -- soLuongTon de 0 vi chua co phieu nhap kho nao.
 -- ============================================================
 
--- Bổ sung danh mục Thú bông
-INSERT INTO danh_muc_san_pham (tenDanhMuc, trangThai) VALUES ('Thu bong', 'HoatDong') ON CONFLICT (tenDanhMuc) DO NOTHING;
 
 INSERT INTO san_pham
     (danhMucId, donViTinhId, maSP, tenSP, giaNhap, giaBan, soLuongTon, trangThai, imageUrl)
@@ -152,8 +151,7 @@ FROM (
         ('Trang suc va phu kien', 'Bo', 'SP006', 'Bộ vòng tay handmade', 30000::numeric, 65000::numeric, 35, '/products/vongtay.jpg'),
         ('Van phong pham', 'Quyen', 'SP007', 'Sổ tay họa tiết Việt Nam', 18000::numeric, 40000::numeric, 55, '/products/sotay.jpg'),
         ('Do trang tri', 'Cai', 'SP008', 'Tranh trang trí mini', 35000::numeric, 75000::numeric, 25, '/products/denngu.png'),
-        ('Ao thun va tui vai', 'Cai', 'SP009', 'Túi vải in họa tiết', 28000::numeric, 60000::numeric, 45, '/products/tuivai.jpg'),
-        ('Qua tang', 'Hop', 'SP010', 'Hộp quà lưu niệm', 40000::numeric, 90000::numeric, 30, '/products/hopqua.png')
+        ('Ao thun va tui vai', 'Cai', 'SP009', 'Túi vải in họa tiết', 28000::numeric, 60000::numeric, 45, '/products/tuivai.jpg')
 ) AS p(tenDanhMuc, tenDonVi, maSP, tenSP, giaNhap, giaBan, soLuongTon, imageUrl)
 JOIN danh_muc_san_pham dm ON dm.tenDanhMuc = p.tenDanhMuc
 JOIN don_vi_tinh dvt ON dvt.tenDonVi = p.tenDonVi
