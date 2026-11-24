@@ -108,12 +108,12 @@ public static class DbSeeder
             new { MaSP = "DL006", TenSP = "Đèn lồng trang trí", DanhMuc = "Đồ trang trí", DVT = "Cái", GiaNhap = 130000m, GiaBan = 250000m, Ton = 9, Image = "/products/denlong.png" },
 
             // Danh mục sản phẩm mẫu lưu niệm bổ sung
-            new { MaSP = "SP001", TenSP = "Nam châm tủ lạnh Việt Nam", DanhMuc = "Đồ lưu niệm", DVT = "Cái", GiaNhap = 12000m, GiaBan = 25000m, Ton = 50, Image = "/products/namcham.jpg" },
-            new { MaSP = "SP002", TenSP = "Mô hình xe xích lô mini", DanhMuc = "Đồ lưu niệm", DVT = "Cái", GiaNhap = 45000m, GiaBan = 85000m, Ton = 30, Image = "/products/xichlo.jpg" },
-            new { MaSP = "SP003", TenSP = "Móc khóa nón lá", DanhMuc = "Móc khóa", DVT = "Cái", GiaNhap = 8000m, GiaBan = 20000m, Ton = 80, Image = "/products/mockhoa.jpg" },
-            new { MaSP = "SP004", TenSP = "Móc khóa landmark", DanhMuc = "Móc khóa", DVT = "Cái", GiaNhap = 10000m, GiaBan = 25000m, Ton = 65, Image = "/products/mockhoa_landmark.jpg" },
-            new { MaSP = "SP005", TenSP = "Quạt giấy thủ công", DanhMuc = "Đồ thủ công mỹ nghệ", DVT = "Cái", GiaNhap = 25000m, GiaBan = 50000m, Ton = 40, Image = "/products/quatgiay.jpg" },
-            new { MaSP = "SP006", TenSP = "Bộ vòng tay handmade", DanhMuc = "Trang sức và phụ kiện", DVT = "Bộ", GiaNhap = 30000m, GiaBan = 65000m, Ton = 35, Image = "/products/vongtay.jpg" },
+            new { MaSP = "SP001", TenSP = "Nam châm tủ lạnh Việt Nam", DanhMuc = "Đồ lưu niệm", DVT = "Cái", GiaNhap = 12000m, GiaBan = 25000m, Ton = 50, Image = "/products/namcham.png" },
+            new { MaSP = "SP002", TenSP = "Mô hình xe xích lô mini", DanhMuc = "Đồ lưu niệm", DVT = "Cái", GiaNhap = 45000m, GiaBan = 85000m, Ton = 30, Image = "/products/xichlo.png" },
+            new { MaSP = "SP003", TenSP = "Móc khóa nón lá", DanhMuc = "Móc khóa", DVT = "Cái", GiaNhap = 8000m, GiaBan = 20000m, Ton = 80, Image = "/products/mockhoa.png" },
+            new { MaSP = "SP004", TenSP = "Móc khóa landmark", DanhMuc = "Móc khóa", DVT = "Cái", GiaNhap = 10000m, GiaBan = 25000m, Ton = 65, Image = "/products/mockhoa_landmark.png" },
+            new { MaSP = "SP005", TenSP = "Quạt giấy thủ công", DanhMuc = "Đồ thủ công mỹ nghệ", DVT = "Cái", GiaNhap = 25000m, GiaBan = 50000m, Ton = 40, Image = "/products/quatgiay.png" },
+            new { MaSP = "SP006", TenSP = "Bộ vòng tay handmade", DanhMuc = "Trang sức và phụ kiện", DVT = "Bộ", GiaNhap = 30000m, GiaBan = 65000m, Ton = 35, Image = "/products/vongtay.png" },
             new { MaSP = "SP007", TenSP = "Sổ tay họa tiết Việt Nam", DanhMuc = "Văn phòng phẩm", DVT = "Quyển", GiaNhap = 18000m, GiaBan = 40000m, Ton = 55, Image = "/products/sotay.jpg" },
             new { MaSP = "SP008", TenSP = "Tranh trang trí mini", DanhMuc = "Đồ trang trí", DVT = "Cái", GiaNhap = 35000m, GiaBan = 75000m, Ton = 25, Image = "/products/denngu.png" },
             new { MaSP = "SP009", TenSP = "Túi vải in họa tiết", DanhMuc = "Áo thun và túi vải", DVT = "Cái", GiaNhap = 28000m, GiaBan = 60000m, Ton = 45, Image = "/products/tuivai.jpg" },
