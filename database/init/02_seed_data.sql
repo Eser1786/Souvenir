@@ -143,12 +143,12 @@ FROM (
         ('Do trang tri', 'Cai', 'DL006', 'Đèn lồng trang trí', 130000::numeric, 250000::numeric, 9, '/products/denlong.png'),
 
         -- Các mặt hàng lưu niệm truyền thống (Seed mẫu với ảnh chuẩn đẹp, tải cục bộ)
-        ('Do luu niem', 'Cai', 'SP001', 'Nam châm tủ lạnh Việt Nam', 12000::numeric, 25000::numeric, 50, '/products/namcham.jpg'),
-        ('Do luu niem', 'Cai', 'SP002', 'Mô hình xe xích lô mini', 45000::numeric, 85000::numeric, 30, '/products/xichlo.jpg'),
-        ('Moc khoa', 'Cai', 'SP003', 'Móc khóa nón lá', 8000::numeric, 20000::numeric, 80, '/products/mockhoa.jpg'),
-        ('Moc khoa', 'Cai', 'SP004', 'Móc khóa landmark', 10000::numeric, 25000::numeric, 65, '/products/mockhoa_landmark.jpg'),
-        ('Do thu cong my nghe', 'Cai', 'SP005', 'Quạt giấy thủ công', 25000::numeric, 50000::numeric, 40, '/products/quatgiay.jpg'),
-        ('Trang suc va phu kien', 'Bo', 'SP006', 'Bộ vòng tay handmade', 30000::numeric, 65000::numeric, 35, '/products/vongtay.jpg'),
+        ('Do luu niem', 'Cai', 'SP001', 'Nam châm tủ lạnh Việt Nam', 12000::numeric, 25000::numeric, 50, '/products/namcham.png'),
+        ('Do luu niem', 'Cai', 'SP002', 'Mô hình xe xích lô mini', 45000::numeric, 85000::numeric, 30, '/products/xichlo.png'),
+        ('Moc khoa', 'Cai', 'SP003', 'Móc khóa nón lá', 8000::numeric, 20000::numeric, 80, '/products/mockhoa.png'),
+        ('Moc khoa', 'Cai', 'SP004', 'Móc khóa landmark', 10000::numeric, 25000::numeric, 65, '/products/mockhoa_landmark.png'),
+        ('Do thu cong my nghe', 'Cai', 'SP005', 'Quạt giấy thủ công', 25000::numeric, 50000::numeric, 40, '/products/quatgiay.png'),
+        ('Trang suc va phu kien', 'Bo', 'SP006', 'Bộ vòng tay handmade', 30000::numeric, 65000::numeric, 35, '/products/vongtay.png'),
         ('Van phong pham', 'Quyen', 'SP007', 'Sổ tay họa tiết Việt Nam', 18000::numeric, 40000::numeric, 55, '/products/sotay.jpg'),
         ('Do trang tri', 'Cai', 'SP008', 'Tranh trang trí mini', 35000::numeric, 75000::numeric, 25, '/products/denngu.png'),
         ('Ao thun va tui vai', 'Cai', 'SP009', 'Túi vải in họa tiết', 28000::numeric, 60000::numeric, 45, '/products/tuivai.jpg')
